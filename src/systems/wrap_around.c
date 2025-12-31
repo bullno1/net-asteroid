@@ -1,4 +1,4 @@
-#include "ecs.h"
+#include "../ecs.h"
 #include <cute_app.h>
 #include <blog.h>
 

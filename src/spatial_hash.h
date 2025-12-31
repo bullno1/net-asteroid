@@ -10,13 +10,14 @@ typedef struct spatial_hash_cell_entry_s spatial_hash_cell_entry_t;
 
 struct spatial_hash_cell_entry_s {
 	spatial_hash_cell_entry_t* next;
+	int len;
 
 	uint64_t data[];
 };
 
 typedef struct {
-	int x;
-	int y;
+	int32_t x;
+	int32_t y;
 } spatial_hash_coord_t;
 
 typedef struct {
@@ -29,7 +30,8 @@ void
 spatial_hash_init(
 	spatial_hash_t* sh,
 	bgame_allocator_t* allocator,
-	barena_pool_t* arena_pool
+	barena_pool_t* arena_pool,
+	float grid_size
 );
 
 void
@@ -44,12 +46,15 @@ spatial_hash_insert(spatial_hash_t* sh, CF_Aabb aabb, uint64_t id);
 spatial_hash_cell_entry_t*
 spatial_hash_get_cell(spatial_hash_t* sh, spatial_hash_coord_t coord);
 
+CF_Aabb
+spatial_hash_get_cell_coord(spatial_hash_t* sh, spatial_hash_coord_t coord);
+
 void
 spatial_hash_get_range(
 	spatial_hash_t* sh,
 	CF_Aabb aabb,
-	spatial_hash_coord_t* min_ptr,
-	spatial_hash_coord_t* max_ptr
+	spatial_hash_coord_t* min_out,
+	spatial_hash_coord_t* max_out
 );
 
 #endif

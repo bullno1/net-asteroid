@@ -4,9 +4,12 @@ set(SOURCES
 
 	"systems/snap_transform.c"
 	"systems/sprite.c"
+	"systems/wrap_around.c"
+	"systems/collision.c"
 	"ecs.c"
 	"asteroid.c"
-	"wrap_around.c"
+
+	"spatial_hash.c"
 
 	"scenes/test_spatial_hash.c"
 )

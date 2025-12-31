@@ -4,6 +4,7 @@
 #include <bgame/scene.h>
 #include <blog.h>
 #include <cute.h>
+#include <barena.h>
 
 static const char* WINDOW_TITLE = "Net asteroid";
 BGAME_VAR(bool, app_created) = false;
