@@ -26,6 +26,9 @@ collider_maker_init(void* userdata, bent_world_t* world) {
 static void
 collider_maker_cleanup(void* userdata, bent_world_t* world) {
 	collider_maker_t* sys = userdata;
+	for (bhash_index_t i = 0; i < bhash_len(&sys->shapes); ++i) {
+		bgame_free(sys->shapes.values[i], bent_memctx(world));;
+	}
 	bhash_cleanup(&sys->shapes);
 }
 
