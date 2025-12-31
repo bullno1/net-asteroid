@@ -36,7 +36,7 @@ init(int argc, const char** argv) {
 		app_created = true;
 	}
 
-	cf_set_fixed_timestep(60);
+	cf_set_fixed_timestep(10);
 	cf_app_set_vsync(true);
 	cf_app_set_title(WINDOW_TITLE);
 
@@ -44,7 +44,6 @@ init(int argc, const char** argv) {
 		bgame_push_scene("test_spatial_hash");
 		bgame_scene_update();
 	}
-	BLOG_DEBUG("Done");
 }
 
 static void
