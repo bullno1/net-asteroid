@@ -4,21 +4,73 @@
 #include <cute.h>
 
 static CF_Aabb
-transform_aabb(CF_Aabb aabb, CF_M3x2 matrix) {
-	CF_V2 corners[4];
-	cf_aabb_verts(corners, aabb);
+make_aabb(const bgame_collision_shape_t* shape, CF_M3x2 transform) {
+	switch (shape->type) {
+		case CF_SHAPE_TYPE_NONE:
+			return (CF_Aabb){ 0 };
+		case CF_SHAPE_TYPE_AABB: {
+			CF_V2 corners[4];
+			cf_aabb_verts(corners, shape->aabb);
 
-	// Transform each corner
-	for (int i = 0; i < 4; i++) {
-		corners[i] = cf_mul(matrix, corners[i]);
+			// Transform each corner
+			for (int i = 0; i < 4; i++) {
+				corners[i] = cf_mul(transform, corners[i]);
+			}
+			return cf_make_aabb_verts(corners, CF_ARRAY_SIZE(corners));;
+		} break;
+		case CF_SHAPE_TYPE_POLY: {
+			CF_V2 verts[CF_POLY_MAX_VERTS];
+
+			for (int i = 0; i < shape->poly.count; i++) {
+				verts[i] = cf_mul(transform, shape->poly.verts[i]);
+			}
+			return cf_make_aabb_verts(verts, shape->poly.count);
+		} break;
+		case CF_SHAPE_TYPE_CIRCLE: {
+			// Transform the center of the circle
+			CF_V2 center_transformed = cf_mul(transform, shape->circle.p);
+
+			// The radius gets scaled by the matrix
+			// Get the scale from the matrix by transforming a unit vector
+			CF_V2 scale_x = cf_sub(cf_mul(transform, cf_v2(1, 0)), cf_mul(transform, cf_v2(0, 0)));
+			CF_V2 scale_y = cf_sub(cf_mul(transform, cf_v2(0, 1)), cf_mul(transform, cf_v2(0, 0)));
+			float scale = cf_max(cf_len(scale_x), cf_len(scale_y));
+			float transformed_radius = shape->capsule.r * scale;
+
+			// Create AABB centered on the transformed circle center
+			float min_x = center_transformed.x - transformed_radius;
+			float max_x = center_transformed.x + transformed_radius;
+			float min_y = center_transformed.y - transformed_radius;
+			float max_y = center_transformed.y + transformed_radius;
+
+			return cf_make_aabb(cf_v2(min_x, min_y), cf_v2(max_x, max_y));
+		} break;
+		case CF_SHAPE_TYPE_CAPSULE: {
+			// Transform the two endpoints of the capsule
+			CF_V2 a_transformed = cf_mul(transform, shape->capsule.a);
+			CF_V2 b_transformed = cf_mul(transform, shape->capsule.b);
+
+			// The radius also gets scaled by the matrix
+			// Get the scale from the matrix by transforming a unit vector
+			CF_V2 scale_x = cf_sub(cf_mul(transform, cf_v2(1, 0)), cf_mul(transform, cf_v2(0, 0)));
+			CF_V2 scale_y = cf_sub(cf_mul(transform, cf_v2(0, 1)), cf_mul(transform, cf_v2(0, 0)));
+			float scale = cf_max(cf_len(scale_x), cf_len(scale_y));
+			float transformed_radius = shape->capsule.r * scale;
+
+			// Find the bounds that encompass both endpoints plus the radius
+			float min_x = cf_min(a_transformed.x, b_transformed.x) - transformed_radius;
+			float max_x = cf_max(a_transformed.x, b_transformed.x) + transformed_radius;
+			float min_y = cf_min(a_transformed.y, b_transformed.y) - transformed_radius;
+			float max_y = cf_max(a_transformed.y, b_transformed.y) + transformed_radius;
+
+			return cf_make_aabb(cf_v2(min_x, min_y), cf_v2(max_x, max_y));
+		} break;
 	}
-
-	return cf_make_aabb_verts(corners, CF_ARRAY_SIZE(corners));;
 }
 
 static void
 collision_init(void* userdata, bent_world_t* world) {
-	spatial_hash_init(userdata, bgame_default_allocator, bgame_arena_pool, 128);
+	spatial_hash_init(userdata, bent_memctx(world), bgame_arena_pool, 128);
 }
 
 static void
@@ -39,12 +91,11 @@ collision_update(
 		spatial_hash_clear(sh);
 		for (bent_index_t i = 0; i < num_entities; ++i) {
 			bent_t ent = entities[i];
-			bgame_transform_t* transform = &bent_get_comp_transform(world, entities[i])->current;
+			bgame_transform_t* transform = &bent_get_comp_transform(world, ent)->current;
 			CF_M3x2 mat = cf_make_transform_TSR(transform->translation, transform->scale, transform->rotation);
-			CF_Sprite* sprite = bent_get_comp_sprite(world, entities[i]);
+			collider_t* collider = bent_get_comp_collider(world, ent);
 
-			CF_Aabb aabb = cf_make_aabb_center_half_extents(cf_v2(0.f, 0.f), cf_v2(sprite->w * 0.5f, sprite->h * 0.5f));
-			CF_Aabb transformed_aabb = transform_aabb(aabb, mat);
+			CF_Aabb transformed_aabb = make_aabb(collider->shape, mat);
 
 			uint64_t id = (uint64_t)ent.index << 32 | (uint64_t)ent.gen;
 			spatial_hash_insert(sh, transformed_aabb, id);
@@ -54,17 +105,36 @@ collision_update(
 	if (update_mask == UPDATE_MASK_RENDER_POST) {
 		cf_draw_push_layer(DRAW_LAYER_DEBUG);
 		for (bent_index_t i = 0; i < num_entities; ++i) {
-			bgame_transform_t* transform = &bent_get_comp_transform(world, entities[i])->current;
+			bent_t ent = entities[i];
+			bgame_transform_t* transform = &bent_get_comp_transform(world, ent)->current;
 			CF_M3x2 mat = cf_make_transform_TSR(transform->translation, transform->scale, transform->rotation);
-			CF_Sprite* sprite = bent_get_comp_sprite(world, entities[i]);
-
-			CF_Aabb aabb = cf_make_aabb_center_half_extents(cf_v2(0.f, 0.f), cf_v2(sprite->w * 0.5f, sprite->h * 0.5f));
-			CF_Aabb transformed_aabb = transform_aabb(aabb, mat);
+			collider_t* collider = bent_get_comp_collider(world, ent);
+			CF_Aabb transformed_aabb = make_aabb(collider->shape, mat);
 
 			cf_draw_box(transformed_aabb, 0.5f, 0.5f);
 			cf_draw_push();
 			cf_draw_transform(mat);
-			cf_draw_box(aabb, 0.5f, 0.5f);
+			switch (collider->shape->type) {
+				case CF_SHAPE_TYPE_NONE:
+					break;
+				case CF_SHAPE_TYPE_CIRCLE:
+					cf_draw_circle(collider->shape->circle, 0.2f);
+					break;
+				case CF_SHAPE_TYPE_AABB:
+					cf_draw_box(collider->shape->aabb, 0.2f, 0.2f);
+					break;
+				case CF_SHAPE_TYPE_CAPSULE:
+					cf_draw_capsule(collider->shape->capsule, 0.2f);
+					break;
+				case CF_SHAPE_TYPE_POLY:
+					cf_draw_polyline(
+						collider->shape->poly.verts,
+						collider->shape->poly.count,
+						0.2f,
+						true
+					);
+					break;
+			}
 			cf_draw_pop();
 		}
 
@@ -99,6 +169,5 @@ BENT_DEFINE_SYS(sys_collision) = {
 	.cleanup = collision_cleanup,
 	.update_mask = UPDATE_MASK_FIXED_PRE | UPDATE_MASK_RENDER_POST,
 	.update = collision_update,
-	// We should use collider shape instead but for now, sprite is good enough
-	.require = BENT_COMP_LIST(&comp_transform, &comp_sprite),
+	.require = BENT_COMP_LIST(&comp_transform, &comp_collider),
 };

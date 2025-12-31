@@ -4,6 +4,7 @@
 #include <bent.h>
 #include <cute_sprite.h>
 #include <bgame/transform.h>
+#include <bgame/asset/collision_shape.h>
 
 enum {
 	UPDATE_MASK_FIXED_PRE   = 1 << 0,
@@ -46,6 +47,18 @@ typedef struct {
 BENT_DECLARE_COMP(comp_renderable)
 BENT_DEFINE_COMP_ADDER(comp_renderable, renderable_t)
 BENT_DEFINE_COMP_GETTER(comp_renderable, renderable_t)
+
+typedef struct {
+	const bgame_collision_shape_t* shape;
+	// When this entity's mask AND another's group > 1, a collision can be
+	// triggered
+	uint16_t mask;  // Mask is what we receive
+	uint16_t group; // Group is what we send
+} collider_t;
+
+BENT_DECLARE_COMP(comp_collider)
+BENT_DEFINE_COMP_ADDER(comp_collider, collider_t)
+BENT_DEFINE_COMP_GETTER(comp_collider, collider_t)
 
 static inline void
 ecs_update_fixed(bent_world_t* world) {

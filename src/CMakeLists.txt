@@ -6,6 +6,7 @@ set(SOURCES
 	"systems/sprite.c"
 	"systems/wrap_around.c"
 	"systems/collision.c"
+	"systems/collider_maker.c"
 	"ecs.c"
 	"asteroid.c"
 
