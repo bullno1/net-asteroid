@@ -2,15 +2,30 @@
 #define COLLISION_H
 
 #include "../ecs.h"
-#include "../spatial_hash.h"
 
-spatial_hash_t*
-get_collision_spatial_hash(float size);
+typedef struct {
+	bent_t a;  // a must be "less than" b
+	bent_t b;
+} entity_pair_t;
 
-bgame_collision_shape_t
-bgame_transform_collision_shape(const bgame_collision_shape_t* shape, CF_M3x2 transform);
+typedef struct {
+	// It is possible to be messaged twice back-to-back if a system matches both
+	// objects in the pair
+	// Using the id, it can dedupe
+	int id;
+	entity_pair_t pair;
+	CF_Manifold manifold;
+} collision_event_t;
 
-CF_Aabb
-bgame_make_shape_aabb(const bgame_collision_shape_t* shape, CF_M3x2 transform);
+typedef void (*collision_callback_fn_t)(
+	void* userdata, bent_world_t* world, bent_t entity, const collision_event_t* event
+);
+
+void
+register_collision_callback(
+	bent_world_t* world,
+	bent_sys_reg_t listener,
+	collision_callback_fn_t callback
+);
 
 #endif

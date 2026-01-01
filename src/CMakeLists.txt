@@ -8,9 +8,9 @@ set(SOURCES
 	"systems/linear_motion.c"
 	"systems/collision.c"
 	"systems/collider_maker.c"
+	"systems/collision_response.c"
 	"systems/debug_control.c"
 	"ecs.c"
-	"asteroid.c"
 
 	"spatial_hash.c"
 

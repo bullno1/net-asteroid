@@ -1,4 +1,5 @@
 #include "collision.h"
+#include "../spatial_hash.h"
 #include <bgame/allocator.h>
 #include <bgame/allocator/frame.h>
 #include <bgame/collision.h>
@@ -10,20 +11,12 @@
 BENT_DECLARE_SYS(sys_collision)
 
 typedef struct {
-	bent_t a;  // a must be "less than" b
-	bent_t b;
-} entity_pair_t;
-
-typedef struct {
-	CF_Manifold manifold;
-	entity_pair_t pair;
-} collision_record_t;
-
-typedef struct {
+	int event_id;
 	spatial_hash_t sh;
 	BHASH_TABLE(bent_t, CF_Aabb) aabb_cache;
+	BHASH_TABLE(bent_index_t, collision_callback_fn_t) collision_callbacks;
 	BHASH_SET(entity_pair_t) checked_pairs;
-	barray(collision_record_t) collision_records;
+	barray(collision_event_t) collision_events;
 } sys_collision_t;
 
 static void
@@ -38,16 +31,35 @@ collision_init(void* userdata, bent_world_t* world) {
 
 	bhash_reinit(&sys->aabb_cache, bconfig);
 	bhash_reinit_set(&sys->checked_pairs, bconfig);
+	bhash_reinit(&sys->collision_callbacks, bconfig);
 }
 
 static void
 collision_cleanup(void* userdata, bent_world_t* world) {
 	sys_collision_t* sys = userdata;
 
-	barray_free(sys->collision_records, bent_memctx(world));;
+	barray_free(sys->collision_events, bent_memctx(world));;
 	bhash_cleanup(&sys->checked_pairs);
 	bhash_cleanup(&sys->aabb_cache);
+	bhash_cleanup(&sys->collision_callbacks);
 	spatial_hash_cleanup(&sys->sh);
+}
+
+static void
+collision_invoke_callbacks(
+	sys_collision_t* sys,
+	bent_world_t* world,
+	bent_t entity,
+	const collision_event_t* event
+) {
+	for (bhash_index_t i = 0; i < bhash_len(&sys->collision_callbacks); ++i) {
+		bent_sys_reg_t listener = { .id = sys->collision_callbacks.keys[i] };
+		collision_callback_fn_t callback = sys->collision_callbacks.values[i];
+
+		if (bent_match(world, listener, entity)) {
+			callback(bent_get_sys_data(world, listener), world, entity, event);
+		}
+	}
 }
 
 static void
@@ -81,7 +93,7 @@ collision_update(
 
 		// Check all cells with at least 2 objects
 		bhash_clear(&sys->checked_pairs);
-		barray_clear(sys->collision_records);
+		barray_clear(sys->collision_events);
 		for (bhash_index_t i = 0; i < bhash_len(&sh->cells); ++i) {
 			spatial_hash_cell_entry_t* entry = sh->cells.values[i];
 			if (entry->len == 1 && entry->next == NULL) { continue; }  // Only one object
@@ -151,20 +163,22 @@ collision_update(
 						&manifold
 					);
 					if (manifold.count > 0) {
+						collision_event_t event = {
+							.id = sys->event_id++,
+							.manifold = manifold,
+							.pair = pair,
+						};
+
 						if (a_cares_about_b) {
-							// Message a
+							collision_invoke_callbacks(sys, world, a, &event);
 						}
 
 						if (b_cares_about_a) {
-							// Message b
+							collision_invoke_callbacks(sys, world, b, &event);
 						}
 
 						if (debug_enabled) {
-							collision_record_t record = {
-								.manifold = manifold,
-								.pair = pair,
-							};
-							barray_push(sys->collision_records, record, bent_memctx(world));
+							barray_push(sys->collision_events, event, bent_memctx(world));
 						}
 					}
 				}
@@ -242,7 +256,7 @@ collision_update(
 			cf_draw_pop_color();
 		}
 
-		BARRAY_FOREACH_REF(record, sys->collision_records) {
+		BARRAY_FOREACH_REF(record, sys->collision_events) {
 			CF_Manifold manifold = record->manifold;
 
 			cf_draw_push_color(cf_color_red());
@@ -269,6 +283,18 @@ collision_update(
 
 		cf_draw_pop_layer();
 	}
+}
+
+void
+register_collision_callback(
+	bent_world_t* world,
+	bent_sys_reg_t listener,
+	collision_callback_fn_t callback
+) {
+	if (listener.id == 0) { return; }
+
+	sys_collision_t* sys = bent_get_sys_data(world, sys_collision);
+	bhash_put(&sys->collision_callbacks, listener.id, callback);
 }
 
 BENT_DEFINE_SYS(sys_collision) = {
