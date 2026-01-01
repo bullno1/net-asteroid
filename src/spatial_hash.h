@@ -6,13 +6,19 @@
 #include <bgame/allocator.h>
 #include <cute_math.h>
 
+#ifndef SPATIAL_HASH_ID_TYPE
+#include <bent.h>
+#define SPATIAL_HASH_ID_TYPE bent_t
+#endif
+
 typedef struct spatial_hash_cell_entry_s spatial_hash_cell_entry_t;
+typedef SPATIAL_HASH_ID_TYPE spatial_hash_id_t;
 
 struct spatial_hash_cell_entry_s {
 	spatial_hash_cell_entry_t* next;
 	int len;
 
-	uint64_t data[];
+	spatial_hash_id_t data[];
 };
 
 typedef struct {
@@ -41,7 +47,7 @@ void
 spatial_hash_clear(spatial_hash_t* sh);
 
 void
-spatial_hash_insert(spatial_hash_t* sh, CF_Aabb aabb, uint64_t id);
+spatial_hash_insert(spatial_hash_t* sh, CF_Aabb aabb, spatial_hash_id_t id);
 
 spatial_hash_cell_entry_t*
 spatial_hash_get_cell(spatial_hash_t* sh, spatial_hash_coord_t coord);

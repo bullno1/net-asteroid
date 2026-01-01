@@ -20,7 +20,7 @@ spatial_hash_entry_size(void) {
 		// Cache the result since it can involve some syscalls
 		spatial_hash_cached_entry_size = BMAX(
 			cf_cacheline_size(),
-			sizeof(spatial_hash_cell_entry_t) + sizeof(uint64_t)
+			sizeof(spatial_hash_cell_entry_t) + sizeof(spatial_hash_id_t)
 		);
 		BLOG_DEBUG("Spatial hash entry size = %zu", spatial_hash_cached_entry_size);
 	}
@@ -31,7 +31,7 @@ static spatial_hash_cell_entry_t*
 spatial_hash_alloc_entry(barena_t* arena) {
 	spatial_hash_cell_entry_t* entry = barena_memalign(
 		arena,
-		BMAX(cf_cacheline_size(), sizeof(spatial_hash_cell_entry_t) + sizeof(uint64_t)),
+		BMAX(cf_cacheline_size(), sizeof(spatial_hash_cell_entry_t) + sizeof(spatial_hash_id_t)),
 		_Alignof(spatial_hash_cell_entry_t)
 	);
 	entry->len = 0;
@@ -74,7 +74,7 @@ spatial_hash_clear(spatial_hash_t* sh) {
 }
 
 void
-spatial_hash_insert(spatial_hash_t* sh, CF_Aabb aabb, uint64_t id) {
+spatial_hash_insert(spatial_hash_t* sh, CF_Aabb aabb, spatial_hash_id_t id) {
 	spatial_hash_coord_t min, max;
 	spatial_hash_get_range(sh, aabb, &min, &max);
 
@@ -93,7 +93,7 @@ spatial_hash_insert(spatial_hash_t* sh, CF_Aabb aabb, uint64_t id) {
 			}
 
 			// Check if it is full
-			if (sizeof(spatial_hash_cell_entry_t) + entry->len * sizeof(uint64_t) == spatial_hash_entry_size()) {
+			if (sizeof(spatial_hash_cell_entry_t) + entry->len * sizeof(spatial_hash_id_t) == spatial_hash_entry_size()) {
 				spatial_hash_cell_entry_t* new_entry = spatial_hash_alloc_entry(&sh->arena);
 				new_entry->next = entry;
 				sh->cells.values[alloc_result.is_new] = new_entry;

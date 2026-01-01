@@ -1,4 +1,5 @@
 #include "debug_control.h"
+#include <bgame/scene.h>
 #include <barray.h>
 #include <dcimgui.h>
 #include <cute_input.h>
@@ -28,13 +29,25 @@ debug_control_update(
 
 	if (ecs_is_debug_enabled(world, sys_debug_control)) {
 		if (ImGui_Begin("Debug", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-			BENT_FOREACH_SYS(itr) {
-				if (itr.sys.def->update_mask & UPDATE_MASK_RENDER_DEBUG) {
-					bent_index_t sys_index = itr.sys.id - 1;
-					if (sys_index >= barray_len(sys->is_debug_enabled)) {
-						barray_resize(sys->is_debug_enabled, sys_index, bent_memctx(world));
+			if (ImGui_CollapsingHeader("Scene", ImGuiTreeNodeFlags_DefaultOpen)) {
+				if (ImGui_Button("Restart")) {
+					bgame_reload_scene();
+				}
+			}
+
+			if (ImGui_CollapsingHeader("Other systems", ImGuiTreeNodeFlags_DefaultOpen)) {
+				BENT_FOREACH_SYS(itr) {
+					if (
+						itr.sys.id != sys_debug_control.id  // Not this system
+						&&
+						itr.sys.def->update_mask & UPDATE_MASK_RENDER_DEBUG  // Support debug
+					) {
+						bent_index_t sys_index = itr.sys.id - 1;
+						if (sys_index >= barray_len(sys->is_debug_enabled)) {
+							barray_resize(sys->is_debug_enabled, sys_index + 1, bent_memctx(world));
+						}
+						ImGui_Checkbox(itr.name, &sys->is_debug_enabled[sys_index]);
 					}
-					ImGui_Checkbox(itr.name, &sys->is_debug_enabled[sys_index]);
 				}
 			}
 		}
@@ -57,7 +70,7 @@ ecs_is_debug_enabled(bent_world_t* world, bent_sys_reg_t sys) {
 
 	bent_index_t sys_index = sys.id - 1;
 	if (sys_index >= barray_len(debug_control->is_debug_enabled)) {
-		barray_resize(debug_control->is_debug_enabled, sys_index, bent_memctx(world));
+		barray_resize(debug_control->is_debug_enabled, sys_index + 1, bent_memctx(world));
 	}
 
 	return debug_control->is_debug_enabled[sys_index];
@@ -71,7 +84,7 @@ ecs_set_debug_enabled(bent_world_t* world, bent_sys_reg_t sys, bool enabled) {
 
 	bent_index_t sys_index = sys.id - 1;
 	if (sys_index >= barray_len(debug_control->is_debug_enabled)) {
-		barray_resize(debug_control->is_debug_enabled, sys_index, bent_memctx(world));
+		barray_resize(debug_control->is_debug_enabled, sys_index + 1, bent_memctx(world));
 	}
 
 	debug_control->is_debug_enabled[sys_index] = enabled;

@@ -100,8 +100,10 @@ collision_update(
 
 			CF_Aabb transformed_aabb = make_aabb(collider->shape, mat);
 
-			uint64_t id = (uint64_t)ent.index << 32 | (uint64_t)ent.gen;
-			spatial_hash_insert(sh, transformed_aabb, id);
+			spatial_hash_insert(sh, transformed_aabb, ent);
+		}
+
+		for (bhash_index_t i = 0; i < bhash_len(&sh->cells); ++i) {
 		}
 	}
 
