@@ -7,6 +7,7 @@ set(SOURCES
 	"systems/wrap_around.c"
 	"systems/collision.c"
 	"systems/collider_maker.c"
+	"systems/debug_control.c"
 	"ecs.c"
 	"asteroid.c"
 

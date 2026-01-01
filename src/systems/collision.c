@@ -2,6 +2,9 @@
 #include <bgame/allocator.h>
 #include <bgame/allocator/frame.h>
 #include <cute.h>
+#include "debug_control.h"
+
+BENT_DECLARE_SYS(sys_collision)
 
 static CF_Aabb
 make_aabb(const bgame_collision_shape_t* shape, CF_M3x2 transform) {
@@ -102,7 +105,7 @@ collision_update(
 		}
 	}
 
-	if (update_mask == UPDATE_MASK_RENDER_POST) {
+	if (ecs_is_debug_enabled(world, sys_collision) && update_mask == UPDATE_MASK_RENDER_DEBUG) {
 		cf_draw_push_layer(DRAW_LAYER_DEBUG);
 		for (bent_index_t i = 0; i < num_entities; ++i) {
 			bent_t ent = entities[i];
@@ -167,7 +170,7 @@ BENT_DEFINE_SYS(sys_collision) = {
 	.init = collision_init,
 	.allow_reinit = true,
 	.cleanup = collision_cleanup,
-	.update_mask = UPDATE_MASK_FIXED_PRE | UPDATE_MASK_RENDER_POST,
+	.update_mask = UPDATE_MASK_FIXED_PRE | UPDATE_MASK_RENDER_DEBUG,
 	.update = collision_update,
 	.require = BENT_COMP_LIST(&comp_transform, &comp_collider),
 };

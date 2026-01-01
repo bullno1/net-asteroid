@@ -7,15 +7,16 @@
 #include <bgame/asset/collision_shape.h>
 
 enum {
-	UPDATE_MASK_FIXED_PRE   = 1 << 0,
-	UPDATE_MASK_FIXED       = 1 << 1,
-	UPDATE_MASK_FIXED_POST  = 1 << 2,
-	UPDATE_MASK_VAR_PRE     = 1 << 3,
-	UPDATE_MASK_VAR         = 1 << 4,
-	UPDATE_MASK_VAR_POST    = 1 << 5,
-	UPDATE_MASK_RENDER_PRE  = 1 << 6,
-	UPDATE_MASK_RENDER      = 1 << 7,
-	UPDATE_MASK_RENDER_POST = 1 << 8,
+	UPDATE_MASK_FIXED_PRE    = 1 << 0,
+	UPDATE_MASK_FIXED        = 1 << 1,
+	UPDATE_MASK_FIXED_POST   = 1 << 2,
+	UPDATE_MASK_VAR_PRE      = 1 << 3,
+	UPDATE_MASK_VAR          = 1 << 4,
+	UPDATE_MASK_VAR_POST     = 1 << 5,
+	UPDATE_MASK_RENDER_PRE   = 1 << 6,
+	UPDATE_MASK_RENDER       = 1 << 7,
+	UPDATE_MASK_RENDER_POST  = 1 << 8,
+	UPDATE_MASK_RENDER_DEBUG = 1 << 9,
 };
 
 typedef enum {
@@ -79,6 +80,7 @@ ecs_render(bent_world_t* world) {
 	bent_run(world, UPDATE_MASK_RENDER_PRE);
 	bent_run(world, UPDATE_MASK_RENDER);
 	bent_run(world, UPDATE_MASK_RENDER_POST);
+	bent_run(world, UPDATE_MASK_RENDER_DEBUG);
 }
 
 static inline void
