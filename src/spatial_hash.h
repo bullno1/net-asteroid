@@ -4,6 +4,7 @@
 #include <bhash.h>
 #include <barena.h>
 #include <bgame/allocator.h>
+#include <bgame/utils.h>
 #include <cute_math.h>
 
 #ifndef SPATIAL_HASH_ID_TYPE
@@ -20,6 +21,11 @@ struct spatial_hash_cell_entry_s {
 
 	spatial_hash_id_t data[];
 };
+
+typedef struct {
+	const spatial_hash_cell_entry_t* current_entry;
+	int current_index;
+} spatial_hash_cell_itr_t;
 
 typedef struct {
 	int32_t x;
@@ -62,5 +68,39 @@ spatial_hash_get_range(
 	spatial_hash_coord_t* min_out,
 	spatial_hash_coord_t* max_out
 );
+
+static inline spatial_hash_cell_itr_t
+spatial_hash_make_itr(const spatial_hash_cell_entry_t* entry) {
+	return (spatial_hash_cell_itr_t){
+		.current_entry = entry,
+		.current_index = 0,
+	};
+}
+
+static inline bool
+spatial_hash_itr_ended(const spatial_hash_cell_itr_t itr) {
+	return itr.current_entry == NULL;  // There is never an empty entry
+}
+
+static inline spatial_hash_cell_itr_t
+spatial_hash_itr_next(spatial_hash_cell_itr_t itr) {
+	int next_index = itr.current_index + 1;
+	if (next_index < itr.current_entry->len) {
+		return (spatial_hash_cell_itr_t){
+			.current_entry = itr.current_entry,
+			.current_index = next_index,
+		};
+	} else {
+		return (spatial_hash_cell_itr_t){
+			.current_entry = itr.current_entry->next,
+			.current_index = 0,
+		};
+	}
+}
+
+static inline spatial_hash_id_t
+spatial_hash_itr_data(const spatial_hash_cell_itr_t itr) {
+	return itr.current_entry->data[itr.current_index];
+}
 
 #endif

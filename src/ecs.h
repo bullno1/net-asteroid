@@ -19,6 +19,10 @@ enum {
 	UPDATE_MASK_RENDER_DEBUG = 1 << 9,
 };
 
+enum {
+	COLLISION_BIT_ASTEROID   = 1 << 0,
+};
+
 typedef enum {
 	DRAW_LAYER_BACKGROUND = 0,
 	DRAW_LAYER_COMMON,

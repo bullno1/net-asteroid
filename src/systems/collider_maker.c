@@ -56,7 +56,7 @@ collider_maker_add(
 				bent_memctx(world)
 			);
 			shape->type = CF_SHAPE_TYPE_AABB;
-			shape->aabb = cf_make_aabb_center_half_extents(
+			shape->data.aabb = cf_make_aabb_center_half_extents(
 				cf_v2(0.f, 0.f),
 				cf_v2(sprite->w * 0.5f, sprite->h * 0.5f)
 			);

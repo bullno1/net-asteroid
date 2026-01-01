@@ -14,5 +14,6 @@ set(SOURCES
 	"spatial_hash.c"
 
 	"scenes/test_spatial_hash.c"
+	"scenes/test_collision_api.c"
 )
 add_bgame_app(net-asteroid "${SOURCES}")
