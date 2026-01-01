@@ -10,6 +10,11 @@
 
 BENT_DECLARE_SYS(sys_collision)
 
+#define MIRROR_X_POSITIVE_BIT (bent_index_t)(1 << ((sizeof(bent_index_t) * CHAR_BIT) - 1))
+#define MIRROR_X_NEGATIVE_BIT (bent_index_t)(1 << ((sizeof(bent_index_t) * CHAR_BIT) - 2))
+#define MIRROR_Y_POSITIVE_BIT (bent_index_t)(1 << ((sizeof(bent_index_t) * CHAR_BIT) - 3))
+#define MIRROR_Y_NEGATIVE_BIT (bent_index_t)(1 << ((sizeof(bent_index_t) * CHAR_BIT) - 4))
+
 typedef struct {
 	int event_id;
 	spatial_hash_t sh;
@@ -63,6 +68,102 @@ collision_invoke_callbacks(
 }
 
 static void
+collision_calculate_mirror(CF_Aabb aabb, CF_Aabb bound, int* mirror_x, int* mirror_y) {
+	if (aabb.min.x < bound.min.x) { *mirror_x =  1; }
+	if (aabb.max.x > bound.max.x) { *mirror_x = -1; }
+	if (aabb.min.y < bound.min.y) { *mirror_y =  1; }
+	if (aabb.max.y > bound.max.y) { *mirror_y = -1; }
+}
+
+static CF_Aabb
+collision_mirror_aabb(CF_Aabb aabb, int mirror_x, int mirror_y, float width, float height) {
+	CF_V2 offset = { width * mirror_x, height * mirror_y };
+	return (CF_Aabb){
+		.min = cf_add(aabb.min, offset),
+		.max = cf_add(aabb.max, offset),
+	};
+}
+
+static bent_t
+collision_make_mirror_id(bent_t entity, int mirror_x, int mirror_y) {
+	return (bent_t){
+		.index = entity.index
+			| (mirror_x > 0 ? MIRROR_X_POSITIVE_BIT : 0)
+			| (mirror_x < 0 ? MIRROR_X_NEGATIVE_BIT : 0)
+			| (mirror_y > 0 ? MIRROR_Y_POSITIVE_BIT : 0)
+			| (mirror_y < 0 ? MIRROR_Y_NEGATIVE_BIT : 0),
+		.gen = entity.gen,
+	};
+}
+
+static bent_t
+collision_decode_id(bent_t entity, int* mirror_x, int* mirror_y) {
+	if (entity.index & MIRROR_X_POSITIVE_BIT) { *mirror_x =  1; }
+	if (entity.index & MIRROR_X_NEGATIVE_BIT) { *mirror_x = -1; }
+	if (entity.index & MIRROR_Y_POSITIVE_BIT) { *mirror_y =  1; }
+	if (entity.index & MIRROR_Y_NEGATIVE_BIT) { *mirror_y = -1; }
+	bent_index_t all_bits = MIRROR_X_POSITIVE_BIT | MIRROR_X_NEGATIVE_BIT | MIRROR_Y_POSITIVE_BIT | MIRROR_Y_NEGATIVE_BIT;
+	return (bent_t){
+		.index = entity.index & (~all_bits),
+		.gen = entity.gen,
+	};
+}
+
+static void
+draw_debug_shape(
+	CF_M3x2 transform,
+	CF_Aabb aabb,
+	const bgame_collision_shape_t* shape,
+	int mirror_x,
+	int mirror_y,
+	float width,
+	float height
+) {
+	CF_V2 offset = { width * mirror_x, height * mirror_y };
+
+	cf_draw_push();
+	cf_draw_translate_v2(offset);
+
+	cf_draw_box(aabb, 0.5f, 0.5f);
+
+	cf_draw_push();
+	cf_draw_transform(transform);
+	switch (shape->type) {
+		case CF_SHAPE_TYPE_NONE:
+			break;
+		case CF_SHAPE_TYPE_CIRCLE:
+			cf_draw_circle(shape->data.circle, 0.2f);
+			break;
+		case CF_SHAPE_TYPE_AABB:
+			cf_draw_box(shape->data.aabb, 0.2f, 0.2f);
+			break;
+		case CF_SHAPE_TYPE_CAPSULE:
+			cf_draw_capsule(shape->data.capsule, 0.2f);
+			break;
+		case CF_SHAPE_TYPE_POLY: {
+			const CF_Poly* poly = &shape->data.poly;
+
+			cf_draw_polyline(poly->verts, poly->count, 0.2f, true);
+
+			for (int i = 0; i < poly->count; ++i) {
+				CF_V2 point_a = poly->verts[i];
+				CF_V2 point_b = poly->verts[(i + 1) % poly->count];
+				CF_V2 midpoint = cf_mul(cf_add(point_a, point_b), 0.5f);
+				cf_draw_arrow(
+					midpoint,
+					cf_add(midpoint, cf_mul(poly->norms[i], 10.f)),
+					0.2f,
+					1.5f
+				);
+			}
+		} break;
+	}
+	cf_draw_pop();
+
+	cf_draw_pop();
+}
+
+static void
 collision_update(
 	void* userdata,
 	bent_world_t* world,
@@ -73,6 +174,16 @@ collision_update(
 	sys_collision_t* sys = userdata;
 	spatial_hash_t* sh = &sys->sh;
 	bool debug_enabled = ecs_is_debug_enabled(world, sys_collision);
+
+	// Wrap around collision
+	float width = cf_app_get_width();
+	float height = cf_app_get_height();
+	float half_width = width * 0.5f;
+	float half_height = height * 0.5f;
+	CF_Aabb screen_box = {
+		.min = { -half_width, -half_height },
+		.max = {  half_width,  half_height },
+	};
 
 	if (update_mask == UPDATE_MASK_FIXED_PRE) {
 		// Put all colliders into a spatial hash
@@ -87,8 +198,45 @@ collision_update(
 			CF_Aabb transformed_aabb = bgame_make_aabb_from_shape(collider->shape, mat);
 			bhash_put(&sys->aabb_cache, ent, transformed_aabb);  // Cache for checking later
 
-			// TODO: wrap around physic
 			spatial_hash_insert(sh, transformed_aabb, ent);
+
+			// Wrap around collision
+			{
+				int mirror_x = 0;
+				int mirror_y = 0;
+
+				collision_calculate_mirror(transformed_aabb, screen_box, &mirror_x, &mirror_y);
+
+				if (mirror_x) {
+					CF_Aabb mirrored = collision_mirror_aabb(
+						transformed_aabb,
+						mirror_x, 0,
+						width, height
+					);
+					bent_t mirror_id = collision_make_mirror_id(ent, mirror_x, 0);
+					spatial_hash_insert(sh, mirrored, mirror_id);
+				}
+
+				if (mirror_y) {
+					CF_Aabb mirrored = collision_mirror_aabb(
+						transformed_aabb,
+						0, mirror_y,
+						width, height
+					);
+					bent_t mirror_id = collision_make_mirror_id(ent, 0, mirror_y);
+					spatial_hash_insert(sh, mirrored, mirror_id);
+				}
+
+				if (mirror_x && mirror_y) {
+					CF_Aabb mirrored = collision_mirror_aabb(
+						transformed_aabb,
+						mirror_x, mirror_y,
+						width, height
+					);
+					bent_t mirror_id = collision_make_mirror_id(ent, mirror_x, mirror_y);
+					spatial_hash_insert(sh, mirrored, mirror_id);
+				}
+			}
 		}
 
 		// Check all cells with at least 2 objects
@@ -111,6 +259,13 @@ collision_update(
 					bent_t a = spatial_hash_itr_data(i);
 					bent_t b = spatial_hash_itr_data(j);
 
+					int a_mirror_x = 0;
+					int a_mirror_y = 0;
+					int b_mirror_x = 0;
+					int b_mirror_y = 0;
+					a = collision_decode_id(a, &a_mirror_x, &a_mirror_y);
+					b = collision_decode_id(b, &b_mirror_x, &b_mirror_y);
+
 					// Check if we have checked this pair before
 					entity_pair_t pair;
 					// To ensure uniqueness of pairs, a must be "less than" b
@@ -123,8 +278,6 @@ collision_update(
 					if (!alloc_result.is_new) { continue; }
 					sys->checked_pairs.keys[alloc_result.index] = pair;  // Mark this pair as checked
 
-					// TODO: handle wrap around collision
-
 					// Do they even care about each other?
 					const collider_t* collider_a = bent_get_comp_collider(world, a);
 					const collider_t* collider_b = bent_get_comp_collider(world, b);
@@ -135,18 +288,22 @@ collision_update(
 					// First, check the AABBs against each other
 					CF_Aabb aabb_of_a = sys->aabb_cache.values[bhash_find(&sys->aabb_cache, a)];
 					CF_Aabb aabb_of_b = sys->aabb_cache.values[bhash_find(&sys->aabb_cache, b)];
+					aabb_of_a = collision_mirror_aabb(aabb_of_a, a_mirror_x, a_mirror_y, width, height);
+					aabb_of_b = collision_mirror_aabb(aabb_of_b, b_mirror_x, b_mirror_y, width, height);
 					if (!cf_aabb_to_aabb(aabb_of_a, aabb_of_b)) { continue; }
 
 					// Then, use the precise shapes
 					const transform_t* comp_transform_a = bent_get_comp_transform(world, a);
 					const transform_t* comp_transform_b = bent_get_comp_transform(world, b);
+					CF_V2 a_offset = { width * a_mirror_x, height * a_mirror_y };
+					CF_V2 b_offset = { width * b_mirror_x, height * b_mirror_y };
 					CF_M3x2 transform_a = cf_make_transform_TSR(
-						comp_transform_a->current.translation,
+						cf_add(comp_transform_a->current.translation, a_offset),
 						comp_transform_a->current.scale,
 						comp_transform_a->current.rotation
 					);
 					CF_M3x2 transform_b = cf_make_transform_TSR(
-						comp_transform_b->current.translation,
+						cf_add(comp_transform_b->current.translation, b_offset),
 						comp_transform_b->current.scale,
 						comp_transform_b->current.rotation
 					);
@@ -190,8 +347,13 @@ collision_update(
 		cf_draw_push_layer(DRAW_LAYER_DEBUG);
 		for (bent_index_t i = 0; i < num_entities; ++i) {
 			bent_t ent = entities[i];
+
 			bgame_transform_t* transform = &bent_get_comp_transform(world, ent)->current;
-			CF_M3x2 mat = cf_make_transform_TSR(transform->translation, transform->scale, transform->rotation);
+			CF_M3x2 mat = cf_make_transform_TSR(
+				transform->translation,
+				transform->scale,
+				transform->rotation
+			);
 			collider_t* collider = bent_get_comp_collider(world, ent);
 
 			CF_Aabb transformed_aabb = { 0 };
@@ -200,40 +362,22 @@ collision_update(
 				transformed_aabb = sys->aabb_cache.values[index];
 			}
 
-			cf_draw_box(transformed_aabb, 0.5f, 0.5f);
-			cf_draw_push();
-			cf_draw_transform(mat);
-			switch (collider->shape->type) {
-				case CF_SHAPE_TYPE_NONE:
-					break;
-				case CF_SHAPE_TYPE_CIRCLE:
-					cf_draw_circle(collider->shape->data.circle, 0.2f);
-					break;
-				case CF_SHAPE_TYPE_AABB:
-					cf_draw_box(collider->shape->data.aabb, 0.2f, 0.2f);
-					break;
-				case CF_SHAPE_TYPE_CAPSULE:
-					cf_draw_capsule(collider->shape->data.capsule, 0.2f);
-					break;
-				case CF_SHAPE_TYPE_POLY: {
-					const CF_Poly* poly = &collider->shape->data.poly;
+			int mirror_x = 0;
+			int mirror_y = 0;
+			collision_calculate_mirror(transformed_aabb, screen_box, &mirror_x, &mirror_y);
 
-					cf_draw_polyline(poly->verts, poly->count, 0.2f, true);
+			draw_debug_shape(mat, transformed_aabb, collider->shape, 0, 0, width, height);
 
-					for (int i = 0; i < poly->count; ++i) {
-						CF_V2 point_a = poly->verts[i];
-						CF_V2 point_b = poly->verts[(i + 1) % poly->count];
-						CF_V2 midpoint = cf_mul(cf_add(point_a, point_b), 0.5f);
-						cf_draw_arrow(
-							midpoint,
-							cf_add(midpoint, cf_mul(poly->norms[i], 10.f)),
-							0.2f,
-							1.5f
-						);
-					}
-				} break;
+			if (mirror_x) {
+				draw_debug_shape(mat, transformed_aabb, collider->shape, mirror_x, 0, width, height);
 			}
-			cf_draw_pop();
+
+			if (mirror_y) {
+				draw_debug_shape(mat, transformed_aabb, collider->shape, 0, mirror_y, width, height);
+			}
+			if (mirror_x & mirror_y) {
+				draw_debug_shape(mat, transformed_aabb, collider->shape, mirror_x, mirror_y, width, height);
+			}
 		}
 
 		for (bhash_index_t i = 0; i < bhash_len(&sh->cells); ++i) {
