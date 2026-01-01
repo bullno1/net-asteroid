@@ -1,5 +1,6 @@
 #include "debug_control.h"
 #include <bgame/scene.h>
+#include <bgame/allocator/tracked.h>
 #include <barray.h>
 #include <dcimgui.h>
 #include <cute_input.h>
@@ -12,6 +13,19 @@ static void
 debug_control_cleanup(void* userdata, bent_world_t* world) {
 	debug_control_t* sys = userdata;
 	barray_free(sys->is_debug_enabled, bent_memctx(world));
+}
+
+static void
+report_allocator_stats(
+	const char* name,
+	bgame_allocator_stats_t stats,
+	void* userdata
+) {
+	ImGui_PushID(name);
+	ImGui_SeparatorText(name);
+	ImGui_Text("Current: %zu", stats.total);
+	ImGui_Text("Peak: %zu", stats.peak);
+	ImGui_PopID();
 }
 
 static void
@@ -33,6 +47,11 @@ debug_control_update(
 				if (ImGui_Button("Restart")) {
 					bgame_reload_scene();
 				}
+			}
+
+			if (ImGui_CollapsingHeader("Allocators", ImGuiTreeNodeFlags_DefaultOpen)) {
+
+				bgame_enumerate_tracked_allocators(report_allocator_stats, NULL);
 			}
 
 			if (ImGui_CollapsingHeader("Other systems", ImGuiTreeNodeFlags_DefaultOpen)) {
