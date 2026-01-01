@@ -65,6 +65,15 @@ BENT_DECLARE_COMP(comp_collider)
 BENT_DEFINE_COMP_ADDER(comp_collider, collider_t)
 BENT_DEFINE_COMP_GETTER(comp_collider, collider_t)
 
+typedef struct {
+	CF_V2 velocity;
+	float rotation;
+} linear_motion_t;
+
+BENT_DECLARE_COMP(comp_linear_motion)
+BENT_DEFINE_COMP_GETTER(comp_linear_motion, linear_motion_t)
+BENT_DEFINE_COMP_ADDER(comp_linear_motion, linear_motion_t)
+
 static inline void
 ecs_update_fixed(bent_world_t* world) {
 	bent_run(world, UPDATE_MASK_FIXED_PRE);

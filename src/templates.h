@@ -5,7 +5,6 @@
 #include <bgame/asset.h>
 #include <bgame/asset/sprite.h>
 #include <bgame/asset/collision_shape.h>
-#include "asteroid.h"
 #include <cute.h>
 
 static inline bent_t
@@ -24,7 +23,7 @@ create_asteroid(
 		.mask = COLLISION_BIT_ASTEROID,
 		.group = COLLISION_BIT_ASTEROID,
 	});
-	bent_add_comp_asteroid(world, asteroid, &(asteroid_t){
+	bent_add_comp_linear_motion(world, asteroid, &(linear_motion_t){
 		.rotation = cf_rnd_range_float(rnd, -2.f, 2.f),
 		.velocity = {
 			cf_rnd_range_float(rnd, -25.f, 25.f),

@@ -19,3 +19,4 @@ BENT_DEFINE_COMP(comp_transform) = {
 BENT_DEFINE_POD_COMP(comp_sprite, CF_Sprite)
 BENT_DEFINE_POD_COMP(comp_collider, collider_t)
 BENT_DEFINE_POD_COMP(comp_renderable, renderable_t)
+BENT_DEFINE_POD_COMP(comp_linear_motion, linear_motion_t)
