@@ -18,3 +18,14 @@ set(SOURCES
 	"scenes/test_collision_api.c"
 )
 add_bgame_app(net-asteroid "${SOURCES}")
+
+if (EMSCRIPTEN)
+	set_target_properties(net-asteroid PROPERTIES SUFFIX ".html")
+	target_compile_options(net-asteroid PRIVATE -fno-rtti -fno-exceptions -gsplit-dwarf)
+	target_link_options(net-asteroid PRIVATE
+		-sASYNCIFY=1
+		-sMALLOC=emmalloc-debug
+		-gseparate-dwarf
+		--preload-file "${CMAKE_CURRENT_LIST_DIR}/../assets@/assets"
+	)
+endif()

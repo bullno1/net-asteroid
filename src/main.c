@@ -53,7 +53,7 @@ report_allocator_stats(
 	bgame_allocator_stats_t stats,
 	void* userdata
 ) {
-	BLOG_DEBUG("%s: Total %" PRId64 ", Peak %" PRId64, name, stats.total, stats.peak);
+	BLOG_DEBUG("%s: Total %zu, Peak %zu", name, stats.total, stats.peak);
 }
 
 static void
