@@ -16,7 +16,22 @@ BENT_DEFINE_COMP(comp_transform) = {
 	.init = comp_transform_init,
 };
 
-BENT_DEFINE_POD_COMP(comp_sprite, CF_Sprite)
+static void
+comp_sprite_init(void* data, void* arg) {
+	sprite_t* sprite = data;
+	sprite->asset = arg;
+	if (arg == NULL) {
+		sprite->instance = cf_sprite_defaults();
+	} else {
+		sprite->instance = *sprite->asset;
+	}
+}
+
+BENT_DEFINE_COMP(comp_sprite) = {
+	.size = sizeof(sprite_t),
+	.init = comp_sprite_init,
+};
+
 BENT_DEFINE_POD_COMP(comp_collider, collider_t)
 BENT_DEFINE_POD_COMP(comp_renderable, renderable_t)
 BENT_DEFINE_POD_COMP(comp_linear_motion, linear_motion_t)

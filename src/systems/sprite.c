@@ -4,6 +4,15 @@
 #include <bminmax.h>
 
 static void
+init_sprite(void* userdata, bent_world_t* world, bent_t entity) {
+	sprite_t* sprite = bent_get_comp_sprite(world, entity);
+	if (sprite->asset) {
+		bgame_asset_bundle_t* bundle = ecs_get_asset_bundle(world);
+		sprite->version = bgame_asset_version(bundle, sprite->asset);
+	}
+}
+
+static void
 animate_sprite(
 	void* userdata,
 	bent_world_t* world,
@@ -11,14 +20,30 @@ animate_sprite(
 	bent_t* entities,
 	bent_index_t num_entities
 ) {
+#if BGAME_RELOADABLE
+	bgame_asset_bundle_t* bundle = ecs_get_asset_bundle(world);
+#endif
+
 	for (bent_index_t i = 0; i < num_entities; ++i) {
-		cf_sprite_update(bent_get_comp_sprite(world, entities[i]));
+		sprite_t* sprite = bent_get_comp_sprite(world, entities[i]);
+#if BGAME_RELOADABLE
+		int asset_version = bgame_asset_version(bundle, sprite->asset);
+		if (sprite->version != asset_version) {
+			const char* anim_name = sprite->instance.animation->name;
+			sprite->instance = *sprite->asset;
+			sprite->version = asset_version;
+			cf_sprite_play(&sprite->instance, anim_name);
+		}
+#endif
+
+		cf_sprite_update(&bent_get_comp_sprite(world, entities[i])->instance);
 	}
 }
 
 BENT_DEFINE_SYS(sys_animate_sprite) = {
 	.update_mask = UPDATE_MASK_VAR,
 	.update = animate_sprite,
+	.add = init_sprite,
 	.require = BENT_COMP_LIST(&comp_sprite),
 };
 
@@ -50,7 +75,7 @@ render_sprite(
 		cf_draw_push_layer(layer);
 		bgame_draw_item_t* draw_item;
 		while ((draw_item = bgame_next_draw_item(draw_list, &itr, layer)) != NULL) {
-			CF_Sprite* sprite = bent_get_comp_sprite(world, draw_item->entity_id);
+			const CF_Sprite* sprite = &bent_get_comp_sprite(world, draw_item->entity_id)->instance;
 			transform_t* transform_data = bent_get_comp_transform(world, draw_item->entity_id);
 			CF_M3x2 transform = get_interpolated_transform(transform_data);
 

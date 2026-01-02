@@ -42,9 +42,15 @@ BENT_DECLARE_COMP(comp_transform)
 BENT_DEFINE_COMP_ADDER_EX(comp_transform, transform_t, bgame_transform_t)
 BENT_DEFINE_COMP_GETTER(comp_transform, transform_t)
 
+typedef struct {
+	CF_Sprite instance;
+	int version;
+	CF_Sprite* asset;
+} sprite_t;
+
 BENT_DECLARE_COMP(comp_sprite)
-BENT_DEFINE_COMP_ADDER(comp_sprite, CF_Sprite)
-BENT_DEFINE_COMP_GETTER(comp_sprite, CF_Sprite)
+BENT_DEFINE_COMP_ADDER_EX(comp_sprite, sprite_t, CF_Sprite)
+BENT_DEFINE_COMP_GETTER(comp_sprite, sprite_t)
 
 typedef struct {
 	draw_layer_t layer;

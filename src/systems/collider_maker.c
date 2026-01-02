@@ -40,7 +40,7 @@ collider_maker_add(
 
 	collider_t* collider = bent_get_comp_collider(world, entity);
 	if (collider->shape == NULL) {
-		CF_Sprite* sprite = bent_get_comp_sprite(world, entity);
+		const CF_Sprite* sprite = &bent_get_comp_sprite(world, entity)->instance;
 		// The identity of a sprite is either easy sprite or name
 		sprite_id_t sprite_id = { 0 };
 		if (sprite->easy_sprite_id > 0) {
