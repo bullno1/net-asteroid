@@ -14,6 +14,7 @@ ship_controller_update(
 	bent_t ent = entities[0];
 	bgame_transform_t* transform = &bent_get_comp_transform(world, ent)->current;
 	linear_motion_t* linear_motion = bent_get_comp_linear_motion(world, ent);
+	ship_t* ship = bent_get_comp_ship(world, ent);
 
 	const float TURN_RATE = 60.0f;
 	if (cf_key_down(CF_KEY_A)) {
@@ -23,10 +24,13 @@ ship_controller_update(
 	} else {
 		linear_motion->rotation =  0.f;
 	}
+	ship->turning = linear_motion->rotation;
 
 	const float MAX_SPEED = 200.f;
 	const float THRUST = 150.f;
 	const float BRAKE_FACTOR = 0.65f;  // Brake is weaker than manual counter thrust
+	ship->thrusting = false;
+	ship->braking = false;
 	if (cf_key_down(CF_KEY_W)) {
 		CF_V2 thrust_vector = cf_mul(
 			cf_v2(cf_sin_f(transform->rotation), cf_cos_f(transform->rotation)),
@@ -35,6 +39,7 @@ ship_controller_update(
 		CF_V2 new_velocity = cf_add(linear_motion->velocity, thrust_vector);
 		float new_speed = cf_len(new_velocity);
 		linear_motion->velocity = cf_mul(cf_norm(new_velocity), cf_min(new_speed, MAX_SPEED));
+		ship->thrusting = true;
 	} else if (cf_key_down(CF_KEY_S)) {
 		float speed = cf_len(linear_motion->velocity);
 		if (speed < 1e-6) {
@@ -44,6 +49,7 @@ ship_controller_update(
 			const float counterthrust = -1.f * cf_min(THRUST * BRAKE_FACTOR * CF_DELTA_TIME_FIXED, speed);
 			CF_V2 thrust_vector = cf_mul(cf_norm(linear_motion->velocity), counterthrust);
 			linear_motion->velocity = cf_add(linear_motion->velocity, thrust_vector);
+			ship->braking = true;
 		}
 	}
 }
@@ -52,7 +58,7 @@ BENT_DEFINE_SYS(sys_ship_controller) = {
 	.update_mask = UPDATE_MASK_FIXED,
 	.update = ship_controller_update,
 	.require = BENT_COMP_LIST(
-		&comp_player_ship,
+		&comp_ship,
 		&comp_ship_controller,
 		&comp_linear_motion,
 		&comp_transform
