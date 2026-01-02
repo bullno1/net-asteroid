@@ -20,8 +20,8 @@ animate_sprite(
 	bent_index_t num_entities
 ) {
 	for (bent_index_t i = 0; i < num_entities; ++i) {
-		sprite_t* sprite = bent_get_comp_sprite(world, entities[i]);
 #if BGAME_RELOADABLE
+		sprite_t* sprite = bent_get_comp_sprite(world, entities[i]);
 		int asset_version = bgame_asset_version(sprite->asset);
 		if (sprite->version != asset_version) {
 			const char* anim_name = sprite->instance.animation->name;

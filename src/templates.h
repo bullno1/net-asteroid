@@ -41,7 +41,7 @@ create_player_ship(bent_world_t* world) {
 	bent_add_comp_renderable(world, ent, &(renderable_t){ .layer = DRAW_LAYER_COMMON });
 	bent_add_comp_sprite(world, ent, spr_player_ship);
 	bent_add_comp_collider(world, ent, &(collider_t){
-		.shape = shape_asteroid_big_1,
+		.shape = shape_player_ship,
 	});
 	bent_add_comp_linear_motion(world, ent, NULL);
 	bent_add_comp_ship(world, ent, NULL);
