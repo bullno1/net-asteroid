@@ -25,7 +25,7 @@ init(void) {
 			create_asteroid(world, &rnd);
 		}
 
-		create_player_ship(world, &rnd);
+		create_player_ship(world);
 	}
 
 	cf_clear_color(0.5f, 0.5f, 0.5f, 1.f);

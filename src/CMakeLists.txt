@@ -13,6 +13,7 @@ set(SOURCES
 	"systems/ship_render.c"
 	"systems/debug_control.c"
 	"ecs.c"
+	"assets.c"
 
 	"spatial_hash.c"
 

@@ -7,8 +7,7 @@ static void
 init_sprite(void* userdata, bent_world_t* world, bent_t entity) {
 	sprite_t* sprite = bent_get_comp_sprite(world, entity);
 	if (sprite->asset) {
-		bgame_asset_bundle_t* bundle = ecs_get_asset_bundle(world);
-		sprite->version = bgame_asset_version(bundle, sprite->asset);
+		sprite->version = bgame_asset_version(sprite->asset);
 	}
 }
 
@@ -20,14 +19,10 @@ animate_sprite(
 	bent_t* entities,
 	bent_index_t num_entities
 ) {
-#if BGAME_RELOADABLE
-	bgame_asset_bundle_t* bundle = ecs_get_asset_bundle(world);
-#endif
-
 	for (bent_index_t i = 0; i < num_entities; ++i) {
 		sprite_t* sprite = bent_get_comp_sprite(world, entities[i]);
 #if BGAME_RELOADABLE
-		int asset_version = bgame_asset_version(bundle, sprite->asset);
+		int asset_version = bgame_asset_version(sprite->asset);
 		if (sprite->version != asset_version) {
 			const char* anim_name = sprite->instance.animation->name;
 			sprite->instance = *sprite->asset;

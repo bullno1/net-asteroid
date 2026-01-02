@@ -6,21 +6,20 @@
 #include <bgame/asset/sprite.h>
 #include <bgame/asset/collision_shape.h>
 #include <cute.h>
+#include "assets.h"
 
 static inline bent_t
 create_asteroid(
 	bent_world_t* world,
 	CF_Rnd* rnd
 ) {
-	bgame_asset_bundle_t* bundle = ecs_get_asset_bundle(world);
-
 	bent_t asteroid = bent_create(world);
 
 	bent_add_comp_transform(world, asteroid, NULL);
 	bent_add_comp_renderable(world, asteroid, &(renderable_t){ .layer = DRAW_LAYER_COMMON });
-	bent_add_comp_sprite(world, asteroid, bgame_load_sprite(bundle, "/assets/sprites/asteroid_big1.png"));
+	bent_add_comp_sprite(world, asteroid, spr_asteroid_big_1);
 	bent_add_comp_collider(world, asteroid, &(collider_t){
-		.shape = bgame_load_collision_shape(bundle, "/assets/shapes/meteor-big1.json"),
+		.shape = shape_asteroid_big_1,
 		.mask = COLLISION_BIT_ASTEROID,
 		.group = COLLISION_BIT_ASTEROID,
 	});
@@ -36,23 +35,30 @@ create_asteroid(
 }
 
 static inline bent_t
-create_player_ship(
-	bent_world_t* world,
-	CF_Rnd* rnd
-) {
-	bgame_asset_bundle_t* bundle = ecs_get_asset_bundle(world);
-
+create_player_ship(bent_world_t* world) {
 	bent_t ent = bent_create(world);
 	bent_add_comp_transform(world, ent, NULL);
 	bent_add_comp_renderable(world, ent, &(renderable_t){ .layer = DRAW_LAYER_COMMON });
-	bent_add_comp_sprite(world, ent, bgame_load_sprite(bundle, "/assets/sprites/player_ship_blue.ase"));
+	bent_add_comp_sprite(world, ent, spr_player_ship);
 	bent_add_comp_collider(world, ent, &(collider_t){
-		.shape = bgame_load_collision_shape(bundle, "/assets/shapes/player-ship.json"),
+		.shape = shape_asteroid_big_1,
 	});
 	bent_add_comp_linear_motion(world, ent, NULL);
 	bent_add_comp_ship(world, ent, NULL);
 	bent_add_comp_player_ship(world, ent);
 	bent_add_comp_ship_controller(world, ent);
+
+	return ent;
+}
+
+static inline bent_t
+create_friendly_projectile(bent_world_t* world) {
+	bent_t ent = bent_create(world);
+	bent_add_comp_transform(world, ent, NULL);
+	bent_add_comp_renderable(world, ent, &(renderable_t){ .layer = DRAW_LAYER_COMMON });
+	bent_add_comp_sprite(world, ent, spr_friendly_projectile);
+	bent_add_comp_collider(world, ent, NULL);
+	bent_add_comp_linear_motion(world, ent, NULL);
 
 	return ent;
 }

@@ -5,9 +5,19 @@
 #include <blog.h>
 #include <cute.h>
 #include <barena.h>
+#include <bgame/asset.h>
 
 static const char* WINDOW_TITLE = "Net asteroid";
 BGAME_VAR(bool, app_created) = false;
+BGAME_VAR(bgame_asset_bundle_t*, predefined_assets) = { 0 };
+
+static void
+load_assets(void) {
+	BGAME_FOREACH_DEFINED_ASSET(asset) {
+		// Optional tag filtering
+		bgame_asset_load_def(predefined_assets, asset);
+	}
+}
 
 static void
 init(int argc, const char** argv) {
@@ -41,6 +51,9 @@ init(int argc, const char** argv) {
 	cf_app_set_vsync(true);
 	cf_app_set_title(WINDOW_TITLE);
 
+	bgame_asset_init(&predefined_assets, bgame_default_allocator);
+	load_assets();
+
 	if (bgame_current_scene() == NULL) {
 		bgame_push_scene("test_spatial_hash");
 		bgame_scene_update();
@@ -59,18 +72,31 @@ report_allocator_stats(
 static void
 cleanup(void) {
 	bgame_clear_scene_stack();
+	bgame_asset_cleanup(&predefined_assets);
 	cf_destroy_app();
 
 	BLOG_DEBUG("--- Allocator stats ---");
 	bgame_enumerate_tracked_allocators(report_allocator_stats, NULL);
 }
 
+static void
+update(void) {
+	bgame_asset_check_bundle(predefined_assets);
+	bgame_scene_update();
+}
+
+static void
+after_reload(void) {
+	load_assets();
+	bgame_scene_after_reload();
+}
+
 static bgame_app_t app = {
 	.init = init,
 	.cleanup = cleanup,
-	.update = bgame_scene_update,
+	.update = update,
 	.before_reload = bgame_scene_before_reload,
-	.after_reload = bgame_scene_after_reload,
+	.after_reload = after_reload,
 };
 
 BGAME_ENTRYPOINT(app)
