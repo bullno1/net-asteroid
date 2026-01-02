@@ -74,6 +74,12 @@ BENT_DECLARE_COMP(comp_linear_motion)
 BENT_DEFINE_COMP_GETTER(comp_linear_motion, linear_motion_t)
 BENT_DEFINE_COMP_ADDER(comp_linear_motion, linear_motion_t)
 
+BENT_DECLARE_COMP(comp_player_ship)
+BENT_DEFINE_TAG_COMP_ADDER(comp_player_ship)
+
+BENT_DECLARE_COMP(comp_ship_controller)
+BENT_DEFINE_TAG_COMP_ADDER(comp_ship_controller)
+
 static inline void
 ecs_update_fixed(bent_world_t* world) {
 	bent_run(world, UPDATE_MASK_FIXED_PRE);

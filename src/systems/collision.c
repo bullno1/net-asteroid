@@ -6,6 +6,7 @@
 #include <barray.h>
 #include <cute.h>
 #include <blog.h>
+#include <dcimgui.h>
 #include "debug_control.h"
 
 BENT_DECLARE_SYS(sys_collision)
@@ -22,6 +23,9 @@ typedef struct {
 	BHASH_TABLE(bent_index_t, collision_callback_fn_t) collision_callbacks;
 	BHASH_SET(entity_pair_t) checked_pairs;
 	barray(collision_event_t) collision_events;
+
+	int num_aabb_checks;
+	int num_detailed_checks;
 } sys_collision_t;
 
 static void
@@ -242,6 +246,8 @@ collision_update(
 		// Check all cells with at least 2 objects
 		bhash_clear(&sys->checked_pairs);
 		barray_clear(sys->collision_events);
+		sys->num_aabb_checks = 0;
+		sys->num_detailed_checks = 0;
 		for (bhash_index_t i = 0; i < bhash_len(&sh->cells); ++i) {
 			spatial_hash_cell_entry_t* entry = sh->cells.values[i];
 			if (entry->len == 1 && entry->next == NULL) { continue; }  // Only one object
@@ -285,7 +291,9 @@ collision_update(
 					bool b_cares_about_a = (collider_b->mask & collider_a->group) > 0;
 					if (!(a_cares_about_b || b_cares_about_a)) { continue; }
 
+
 					// First, check the AABBs against each other
+					++sys->num_aabb_checks;
 					CF_Aabb aabb_of_a = sys->aabb_cache.values[bhash_find(&sys->aabb_cache, a)];
 					CF_Aabb aabb_of_b = sys->aabb_cache.values[bhash_find(&sys->aabb_cache, b)];
 					aabb_of_a = collision_mirror_aabb(aabb_of_a, a_mirror_x, a_mirror_y, width, height);
@@ -293,6 +301,7 @@ collision_update(
 					if (!cf_aabb_to_aabb(aabb_of_a, aabb_of_b)) { continue; }
 
 					// Then, use the precise shapes
+					++sys->num_detailed_checks;
 					const transform_t* comp_transform_a = bent_get_comp_transform(world, a);
 					const transform_t* comp_transform_b = bent_get_comp_transform(world, b);
 					CF_V2 a_offset = { width * a_mirror_x, height * a_mirror_y };
@@ -426,6 +435,14 @@ collision_update(
 		}
 
 		cf_draw_pop_layer();
+
+		if (ImGui_Begin("Debug", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+			if (ImGui_CollapsingHeader("Collision", ImGuiTreeNodeFlags_DefaultOpen)) {
+				ImGui_Text("Num aabb checks: %d", sys->num_aabb_checks);
+				ImGui_Text("Num detailed checks: %d", sys->num_detailed_checks);
+			}
+		}
+		ImGui_End();
 	}
 }
 

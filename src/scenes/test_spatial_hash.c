@@ -25,9 +25,11 @@ init(void) {
 	if (bent_init(&world, scene_allocator)) {
 		rnd = cf_rnd_seed(CF_TICKS);
 
-		for (int i = 0; i < 20; ++i) {
+		for (int i = 0; i < 10; ++i) {
 			create_asteroid(world, bundle, &rnd);
 		}
+
+		create_player_ship(world, bundle, &rnd);
 	}
 
 	cf_clear_color(0.5f, 0.5f, 0.5f, 1.f);

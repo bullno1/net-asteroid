@@ -34,4 +34,24 @@ create_asteroid(
 	return asteroid;
 }
 
+static inline bent_t
+create_player_ship(
+	bent_world_t* world,
+	bgame_asset_bundle_t* bundle,
+	CF_Rnd* rnd
+) {
+	bent_t ent = bent_create(world);
+	bent_add_comp_transform(world, ent, NULL);
+	bent_add_comp_renderable(world, ent, &(renderable_t){ .layer = DRAW_LAYER_COMMON });
+	bent_add_comp_sprite(world, ent, bgame_load_sprite(bundle, "/assets/sprites/player_ship_blue.ase"));
+	bent_add_comp_collider(world, ent, &(collider_t){
+		.shape = bgame_load_collision_shape(bundle, "/assets/shapes/player-ship.json"),
+	});
+	bent_add_comp_linear_motion(world, ent, NULL);
+	bent_add_comp_player_ship(world, ent);
+	bent_add_comp_ship_controller(world, ent);
+
+	return ent;
+}
+
 #endif
