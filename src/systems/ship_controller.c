@@ -1,6 +1,5 @@
 #include "../ecs.h"
 #include <cute.h>
-#include <blog.h>
 
 static void
 ship_controller_update(
@@ -46,7 +45,6 @@ ship_controller_update(
 			CF_V2 thrust_vector = cf_mul(cf_norm(linear_motion->velocity), counterthrust);
 			linear_motion->velocity = cf_add(linear_motion->velocity, thrust_vector);
 		}
-
 	}
 }
 

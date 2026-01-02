@@ -10,6 +10,7 @@ set(SOURCES
 	"systems/collider_maker.c"
 	"systems/collision_response.c"
 	"systems/ship_controller.c"
+	"systems/ship_render.c"
 	"systems/debug_control.c"
 	"ecs.c"
 

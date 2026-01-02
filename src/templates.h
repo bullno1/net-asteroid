@@ -10,9 +10,10 @@
 static inline bent_t
 create_asteroid(
 	bent_world_t* world,
-	bgame_asset_bundle_t* bundle,
 	CF_Rnd* rnd
 ) {
+	bgame_asset_bundle_t* bundle = ecs_get_asset_bundle(world);
+
 	bent_t asteroid = bent_create(world);
 
 	bent_add_comp_transform(world, asteroid, NULL);
@@ -37,9 +38,10 @@ create_asteroid(
 static inline bent_t
 create_player_ship(
 	bent_world_t* world,
-	bgame_asset_bundle_t* bundle,
 	CF_Rnd* rnd
 ) {
+	bgame_asset_bundle_t* bundle = ecs_get_asset_bundle(world);
+
 	bent_t ent = bent_create(world);
 	bent_add_comp_transform(world, ent, NULL);
 	bent_add_comp_renderable(world, ent, &(renderable_t){ .layer = DRAW_LAYER_COMMON });
@@ -48,6 +50,7 @@ create_player_ship(
 		.shape = bgame_load_collision_shape(bundle, "/assets/shapes/player-ship.json"),
 	});
 	bent_add_comp_linear_motion(world, ent, NULL);
+	bent_add_comp_ship(world, ent, NULL);
 	bent_add_comp_player_ship(world, ent);
 	bent_add_comp_ship_controller(world, ent);
 
