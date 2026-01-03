@@ -62,6 +62,9 @@ create_asteroid(
 		.velocity = velocity,
 	});
 
+	bent_add_comp_asteroid(world, asteroid);
+	bent_add_comp_wrap_around(world, asteroid);
+
 	return asteroid;
 }
 
@@ -77,19 +80,37 @@ create_player_ship(bent_world_t* world) {
 	bent_add_comp_linear_motion(world, ent, NULL);
 	bent_add_comp_ship(world, ent, NULL);
 	bent_add_comp_player_ship(world, ent);
+	bent_add_comp_wrap_around(world, ent);
 	bent_add_comp_ship_controller(world, ent);
 
 	return ent;
 }
 
 static inline bent_t
-create_friendly_projectile(bent_world_t* world) {
+create_friendly_projectile(bent_world_t* world, CF_V2 position, float rotation) {
 	bent_t ent = bent_create(world);
-	bent_add_comp_transform(world, ent, NULL);
-	bent_add_comp_renderable(world, ent, &(renderable_t){ .layer = DRAW_LAYER_COMMON });
+
+	bent_add_comp_transform(world, ent, &(bgame_transform_t){
+		.translation = position,
+		.rotation = rotation,
+		.scale = cf_v2(1.f, 1.f),
+	});
+	bent_add_comp_renderable(world, ent, &(renderable_t){ .layer = DRAW_LAYER_PROJECTILE });
 	bent_add_comp_sprite(world, ent, spr_friendly_projectile);
-	bent_add_comp_collider(world, ent, NULL);
-	bent_add_comp_linear_motion(world, ent, NULL);
+	bent_add_comp_collider(world, ent, &(collider_t){
+		.mask = COLLISION_BIT_ASTEROID,
+	});
+	const float SPEED = 400.f;
+	bent_add_comp_linear_motion(world, ent, &(linear_motion_t){
+		.velocity = {
+			cf_sin_f(rotation) * SPEED,
+			cf_cos_f(rotation) * SPEED,
+		},
+	});
+	bent_add_comp_projectile(world, ent, &(projectile_t){
+		.type = PROJECTILE_FRIENDLY,
+	});
+	bent_add_comp_offscreen_cull(world, ent);
 
 	return ent;
 }

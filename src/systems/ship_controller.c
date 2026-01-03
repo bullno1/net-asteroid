@@ -1,5 +1,6 @@
 #include "../ecs.h"
 #include <cute.h>
+#include "../templates.h"
 
 static void
 ship_controller_update(
@@ -15,6 +16,7 @@ ship_controller_update(
 	bgame_transform_t* transform = &bent_get_comp_transform(world, ent)->current;
 	linear_motion_t* linear_motion = bent_get_comp_linear_motion(world, ent);
 	ship_t* ship = bent_get_comp_ship(world, ent);
+	sprite_t* sprite = bent_get_comp_sprite(world, ent);
 
 	const float TURN_RATE = 60.0f;
 	if (cf_key_down(CF_KEY_A)) {
@@ -26,9 +28,9 @@ ship_controller_update(
 	}
 	ship->turning = linear_motion->rotation;
 
-	const float MAX_SPEED = 200.f;
-	const float THRUST = 150.f;
-	const float BRAKE_FACTOR = 0.65f;  // Brake is weaker than manual counter thrust
+	const float MAX_SPEED = 210.f;
+	const float THRUST = 170.f;
+	const float BRAKE_FACTOR = 0.75f;  // Brake is weaker than manual counter thrust
 	ship->thrusting = false;
 	ship->braking = false;
 	if (cf_key_down(CF_KEY_W)) {
@@ -52,6 +54,23 @@ ship_controller_update(
 			ship->braking = true;
 		}
 	}
+
+	const float ROUNDS_PER_SEC = 2.f;
+	const float fire_interval_s = 1.f / ROUNDS_PER_SEC;
+	if (cf_key_down(CF_KEY_SPACE)) {
+		ship->firing = true;
+
+		if (CF_SECONDS - ship->last_fire_timestamp_s >= fire_interval_s) {
+			ship->last_fire_timestamp_s = CF_SECONDS;
+
+			CF_M3x2 ship_transform = cf_make_transform_TSR(
+				transform->translation, transform->scale, transform->rotation
+			);
+			CF_V2 nozzle = cf_center(cf_sprite_get_slice(sprite->asset, "nozzle"));
+			CF_V2 projectile_pos = cf_mul(ship_transform, nozzle);
+			create_friendly_projectile(world, projectile_pos, transform->rotation);
+		}
+	}
 }
 
 BENT_DEFINE_SYS(sys_ship_controller) = {
@@ -59,6 +78,7 @@ BENT_DEFINE_SYS(sys_ship_controller) = {
 	.update = ship_controller_update,
 	.require = BENT_COMP_LIST(
 		&comp_ship,
+		&comp_sprite,
 		&comp_ship_controller,
 		&comp_linear_motion,
 		&comp_transform

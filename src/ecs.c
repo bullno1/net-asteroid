@@ -1,3 +1,4 @@
+#define BENT_DEFINE_COMPONENTS
 #include "ecs.h"
 
 static void
@@ -31,10 +32,3 @@ BENT_DEFINE_COMP(comp_sprite) = {
 	.size = sizeof(sprite_t),
 	.init = comp_sprite_init,
 };
-
-BENT_DEFINE_POD_COMP(comp_collider, collider_t)
-BENT_DEFINE_POD_COMP(comp_renderable, renderable_t)
-BENT_DEFINE_POD_COMP(comp_linear_motion, linear_motion_t)
-BENT_DEFINE_TAG_COMP(comp_player_ship)
-BENT_DEFINE_TAG_COMP(comp_ship_controller)
-BENT_DEFINE_POD_COMP(comp_ship, ship_t)

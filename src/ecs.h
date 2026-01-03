@@ -24,15 +24,6 @@ enum {
 	COLLISION_BIT_ASTEROID   = 1 << 0,
 };
 
-typedef enum {
-	DRAW_LAYER_BACKGROUND = 0,
-	DRAW_LAYER_COMMON,
-	DRAW_LAYER_UI,
-	DRAW_LAYER_DEBUG,
-
-	DRAW_LAYER_COUNT,
-} draw_layer_t;
-
 typedef struct {
 	bgame_transform_t current;
 	bgame_transform_t previous;
@@ -52,13 +43,21 @@ BENT_DECLARE_COMP(comp_sprite)
 BENT_DEFINE_COMP_ADDER_EX(comp_sprite, sprite_t, CF_Sprite)
 BENT_DEFINE_COMP_GETTER(comp_sprite, sprite_t)
 
+typedef enum {
+	DRAW_LAYER_BACKGROUND = 0,
+	DRAW_LAYER_PROJECTILE,
+	DRAW_LAYER_COMMON,
+	DRAW_LAYER_UI,
+	DRAW_LAYER_DEBUG,
+
+	DRAW_LAYER_COUNT,
+} draw_layer_t;
+
 typedef struct {
 	draw_layer_t layer;
 } renderable_t;
 
-BENT_DECLARE_COMP(comp_renderable)
-BENT_DEFINE_COMP_ADDER(comp_renderable, renderable_t)
-BENT_DEFINE_COMP_GETTER(comp_renderable, renderable_t)
+BENT_POD_COMP(comp_renderable, renderable_t)
 
 typedef struct {
 	const bgame_collision_shape_t* shape;
@@ -68,38 +67,41 @@ typedef struct {
 	uint16_t group; // Group is what we send
 } collider_t;
 
-BENT_DECLARE_COMP(comp_collider)
-BENT_DEFINE_COMP_ADDER(comp_collider, collider_t)
-BENT_DEFINE_COMP_GETTER(comp_collider, collider_t)
+BENT_POD_COMP(comp_collider, collider_t)
 
 typedef struct {
 	CF_V2 velocity;
 	float rotation;
 } linear_motion_t;
 
-BENT_DECLARE_COMP(comp_linear_motion)
-BENT_DEFINE_COMP_GETTER(comp_linear_motion, linear_motion_t)
-BENT_DEFINE_COMP_ADDER(comp_linear_motion, linear_motion_t)
+BENT_POD_COMP(comp_linear_motion, linear_motion_t)
 
 typedef struct {
 	bool thrusting;
 	bool braking;
 	bool firing;
 	float turning;
+	float last_fire_timestamp_s;
 } ship_t;
 
-BENT_DECLARE_COMP(comp_ship)
-BENT_DEFINE_COMP_ADDER(comp_ship, ship_t)
-BENT_DEFINE_COMP_GETTER(comp_ship, ship_t)
+BENT_POD_COMP(comp_ship, ship_t)
 
-BENT_DECLARE_COMP(comp_player_ship)
-BENT_DEFINE_TAG_COMP_ADDER(comp_player_ship)
+typedef enum {
+	PROJECTILE_FRIENDLY,
+	PROJECTILE_HOSTILE,
+} projectile_type_t;
 
-BENT_DECLARE_COMP(comp_ship_controller)
-BENT_DEFINE_TAG_COMP_ADDER(comp_ship_controller)
+typedef struct {
+	projectile_type_t type;
+} projectile_t;
 
-bgame_asset_bundle_t*
-ecs_get_asset_bundle(bent_world_t* world);
+BENT_POD_COMP(comp_projectile, projectile_t)
+
+BENT_TAG_COMP(comp_asteroid)
+BENT_TAG_COMP(comp_wrap_around)
+BENT_TAG_COMP(comp_offscreen_cull)
+BENT_TAG_COMP(comp_player_ship)
+BENT_TAG_COMP(comp_ship_controller)
 
 static inline void
 ecs_update_fixed(bent_world_t* world) {

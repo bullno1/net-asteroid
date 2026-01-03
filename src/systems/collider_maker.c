@@ -20,7 +20,7 @@ collider_maker_init(void* userdata, bent_world_t* world) {
 	bhash_config_t config = bhash_config_default();
 	config.memctx = bent_memctx(world);
 	config.removable = false;
-	bhash_init(&sys->shapes, config);
+	bhash_reinit(&sys->shapes, config);
 }
 
 static void
@@ -72,6 +72,7 @@ collider_maker_add(
 BENT_DEFINE_SYS(sys_collider_maker) = {
 	.size = sizeof(collider_maker_t),
 	.init = collider_maker_init,
+	.allow_reinit = true,
 	.cleanup = collider_maker_cleanup,
 	.require = BENT_COMP_LIST(&comp_sprite, &comp_collider),
 	.add = collider_maker_add,
