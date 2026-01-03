@@ -76,6 +76,8 @@ create_player_ship(bent_world_t* world) {
 	bent_add_comp_sprite(world, ent, spr_player_ship);
 	bent_add_comp_collider(world, ent, &(collider_t){
 		.shape = shape_player_ship,
+		.mask = COLLISION_BIT_ASTEROID,
+		.group = COLLISION_BIT_SHIP,
 	});
 	bent_add_comp_linear_motion(world, ent, NULL);
 	bent_add_comp_ship(world, ent, NULL);
