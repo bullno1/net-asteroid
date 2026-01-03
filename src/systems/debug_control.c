@@ -1,5 +1,6 @@
 #include "debug_control.h"
 #include <bgame/scene.h>
+#include <bgame/ui.h>
 #include <bgame/allocator/tracked.h>
 #include <barray.h>
 #include <dcimgui.h>
@@ -39,6 +40,7 @@ debug_control_update(
 	debug_control_t* sys = userdata;
 	if (cf_key_just_pressed(CF_KEY_F12)) {
 		ecs_set_debug_enabled(world, sys_debug_control, !ecs_is_debug_enabled(world, sys_debug_control));
+		Clay_SetDebugModeEnabled(ecs_is_debug_enabled(world, sys_debug_control));
 	}
 
 	if (ecs_is_debug_enabled(world, sys_debug_control)) {

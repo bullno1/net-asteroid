@@ -11,7 +11,7 @@
 
 #define SCENE_VAR(TYPE, NAME) BGAME_PRIVATE_VAR(test_spatial_hash, TYPE, NAME)
 
-BGAME_DECLARE_SCENE_ALLOCATOR(test_spatial_hash)
+BGAME_DECLARE_SCENE_ALLOCATOR(main_game)
 
 SCENE_VAR(bent_world_t*, world)
 SCENE_VAR(background_t, background)

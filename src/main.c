@@ -55,7 +55,7 @@ init(int argc, const char** argv) {
 	load_assets();
 
 	if (bgame_current_scene() == NULL) {
-		bgame_push_scene("main_game");
+		bgame_push_scene("main_menu");
 		bgame_scene_update();
 	}
 }

@@ -10,3 +10,5 @@ BGAME_DEFINE_COLLISION_SHAPE(shape_asteroid_big_1) = { .path = "/assets/shapes/m
 BGAME_DEFINE_COLLISION_SHAPE(shape_player_ship) = { .path = "/assets/shapes/player-ship.json" };
 
 BGAME_DEFINE_IMAGE(img_background_stars) = { .path = "/assets/backgrounds/blue.png" };
+
+BGAME_DEFINE_FONT(font_ui_label) = { .path = "/assets/fonts/kenvector_future.ttf" };
