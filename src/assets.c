@@ -7,3 +7,5 @@ BGAME_DEFINE_SPRITE(spr_friendly_projectile) = { .path = "/assets/sprites/friend
 
 BGAME_DEFINE_COLLISION_SHAPE(shape_asteroid_big_1) = { .path = "/assets/shapes/meteor-big1.json" };
 BGAME_DEFINE_COLLISION_SHAPE(shape_player_ship) = { .path = "/assets/shapes/player-ship.json" };
+
+BGAME_DEFINE_IMAGE(img_background_stars) = { .path = "/assets/backgrounds/blue.png" };
