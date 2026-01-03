@@ -13,6 +13,7 @@ BGAME_VAR(bgame_asset_bundle_t*, predefined_assets) = { 0 };
 
 static void
 load_assets(void) {
+	bgame_asset_init(&predefined_assets, bgame_default_allocator);
 	BGAME_FOREACH_DEFINED_ASSET(asset) {
 		// Optional tag filtering
 		bgame_asset_load_def(predefined_assets, asset);
@@ -51,7 +52,6 @@ init(int argc, const char** argv) {
 	cf_app_set_vsync(true);
 	cf_app_set_title(WINDOW_TITLE);
 
-	bgame_asset_init(&predefined_assets, bgame_default_allocator);
 	load_assets();
 
 	if (bgame_current_scene() == NULL) {

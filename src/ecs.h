@@ -84,6 +84,7 @@ BENT_DEFINE_COMP_ADDER(comp_linear_motion, linear_motion_t)
 typedef struct {
 	bool thrusting;
 	bool braking;
+	bool firing;
 	float turning;
 } ship_t;
 
