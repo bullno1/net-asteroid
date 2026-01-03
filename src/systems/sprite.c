@@ -79,6 +79,10 @@ render_sprite(
 			cf_draw_sprite(sprite);
 			cf_draw_pop();
 
+			if (!bent_has(world, draw_item->entity_id, comp_wrap_around)) {
+				continue;
+			}
+
 			int mirror_x = 0;
 			int mirror_y = 0;
 			float x = transform_data->current.translation.x;

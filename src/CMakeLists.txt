@@ -5,6 +5,7 @@ set(SOURCES
 	"systems/snap_transform.c"
 	"systems/sprite.c"
 	"systems/wrap_around.c"
+	"systems/offscreen_cull.c"
 	"systems/linear_motion.c"
 	"systems/collision.c"
 	"systems/collider_maker.c"

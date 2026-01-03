@@ -21,7 +21,9 @@ enum {
 };
 
 enum {
-	COLLISION_BIT_ASTEROID   = 1 << 0,
+	COLLISION_BIT_ASTEROID     = 1 << 0,
+	COLLISION_BIT_PROJECTILE   = 1 << 1,
+	COLLISION_BIT_SHIP         = 1 << 2,
 };
 
 typedef struct {

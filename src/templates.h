@@ -50,7 +50,7 @@ create_asteroid(
 	bent_add_comp_sprite(world, asteroid, spr_asteroid_big_1);
 	bent_add_comp_collider(world, asteroid, &(collider_t){
 		.shape = shape_asteroid_big_1,
-		.mask = COLLISION_BIT_ASTEROID,
+		.mask = COLLISION_BIT_ASTEROID | COLLISION_BIT_PROJECTILE,
 		.group = COLLISION_BIT_ASTEROID,
 	});
 
@@ -98,7 +98,8 @@ create_friendly_projectile(bent_world_t* world, CF_V2 position, float rotation) 
 	bent_add_comp_renderable(world, ent, &(renderable_t){ .layer = DRAW_LAYER_PROJECTILE });
 	bent_add_comp_sprite(world, ent, spr_friendly_projectile);
 	bent_add_comp_collider(world, ent, &(collider_t){
-		.mask = COLLISION_BIT_ASTEROID,
+		.mask  = COLLISION_BIT_ASTEROID,
+		.group = COLLISION_BIT_PROJECTILE,
 	});
 	const float SPEED = 400.f;
 	bent_add_comp_linear_motion(world, ent, &(linear_motion_t){

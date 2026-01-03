@@ -37,5 +37,5 @@ wrap_around_update(
 BENT_DEFINE_SYS(sys_wraparound) = {
 	.update_mask = UPDATE_MASK_FIXED_POST,
 	.update = wrap_around_update,
-	.require = BENT_COMP_LIST(&comp_transform),
+	.require = BENT_COMP_LIST(&comp_transform, &comp_wrap_around),
 };

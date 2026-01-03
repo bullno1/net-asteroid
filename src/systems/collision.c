@@ -17,12 +17,18 @@ BENT_DECLARE_SYS(sys_collision)
 #define MIRROR_Y_NEGATIVE_BIT (bent_index_t)(1 << ((sizeof(bent_index_t) * CHAR_BIT) - 4))
 
 typedef struct {
+	bool messaged_a;
+	bool messaged_b;
+	collision_event_t event;
+} collision_record_t;
+
+typedef struct {
 	int event_id;
 	spatial_hash_t sh;
 	BHASH_TABLE(bent_t, CF_Aabb) aabb_cache;
 	BHASH_TABLE(bent_index_t, collision_callback_fn_t) collision_callbacks;
 	BHASH_SET(entity_pair_t) checked_pairs;
-	barray(collision_event_t) collision_events;
+	barray(collision_record_t) collision_records;
 
 	int num_aabb_checks;
 	int num_detailed_checks;
@@ -47,7 +53,7 @@ static void
 collision_cleanup(void* userdata, bent_world_t* world) {
 	sys_collision_t* sys = userdata;
 
-	barray_free(sys->collision_events, bent_memctx(world));;
+	barray_free(sys->collision_records, bent_memctx(world));;
 	bhash_cleanup(&sys->checked_pairs);
 	bhash_cleanup(&sys->aabb_cache);
 	bhash_cleanup(&sys->collision_callbacks);
@@ -205,7 +211,7 @@ collision_update(
 			spatial_hash_insert(sh, transformed_aabb, ent);
 
 			// Wrap around collision
-			{
+			if (bent_has(world, ent, comp_wrap_around)) {
 				int mirror_x = 0;
 				int mirror_y = 0;
 
@@ -245,7 +251,7 @@ collision_update(
 
 		// Check all cells with at least 2 objects
 		bhash_clear(&sys->checked_pairs);
-		barray_clear(sys->collision_events);
+		barray_clear(sys->collision_records);
 		sys->num_aabb_checks = 0;
 		sys->num_detailed_checks = 0;
 		for (bhash_index_t i = 0; i < bhash_len(&sh->cells); ++i) {
@@ -344,7 +350,12 @@ collision_update(
 						}
 
 						if (debug_enabled) {
-							barray_push(sys->collision_events, event, bent_memctx(world));
+							collision_record_t record = {
+								.messaged_a = a_cares_about_b,
+								.messaged_b = b_cares_about_a,
+								.event = event,
+							};
+							barray_push(sys->collision_records, record, bent_memctx(world));
 						}
 					}
 				}
@@ -371,21 +382,23 @@ collision_update(
 				transformed_aabb = sys->aabb_cache.values[index];
 			}
 
-			int mirror_x = 0;
-			int mirror_y = 0;
-			collision_calculate_mirror(transformed_aabb, screen_box, &mirror_x, &mirror_y);
-
 			draw_debug_shape(mat, transformed_aabb, collider->shape, 0, 0, width, height);
 
-			if (mirror_x) {
-				draw_debug_shape(mat, transformed_aabb, collider->shape, mirror_x, 0, width, height);
-			}
+			if (bent_has(world, ent, comp_wrap_around)) {
+				int mirror_x = 0;
+				int mirror_y = 0;
+				collision_calculate_mirror(transformed_aabb, screen_box, &mirror_x, &mirror_y);
 
-			if (mirror_y) {
-				draw_debug_shape(mat, transformed_aabb, collider->shape, 0, mirror_y, width, height);
-			}
-			if (mirror_x & mirror_y) {
-				draw_debug_shape(mat, transformed_aabb, collider->shape, mirror_x, mirror_y, width, height);
+				if (mirror_x) {
+					draw_debug_shape(mat, transformed_aabb, collider->shape, mirror_x, 0, width, height);
+				}
+
+				if (mirror_y) {
+					draw_debug_shape(mat, transformed_aabb, collider->shape, 0, mirror_y, width, height);
+				}
+				if (mirror_x & mirror_y) {
+					draw_debug_shape(mat, transformed_aabb, collider->shape, mirror_x, mirror_y, width, height);
+				}
 			}
 		}
 
@@ -409,27 +422,32 @@ collision_update(
 			cf_draw_pop_color();
 		}
 
-		BARRAY_FOREACH_REF(record, sys->collision_events) {
-			CF_Manifold manifold = record->manifold;
+		BARRAY_FOREACH_REF(record, sys->collision_records) {
+			CF_Manifold manifold = record->event.manifold;
 
 			cf_draw_push_color(cf_color_red());
 			for (int i = 0; i < manifold.count; ++i) {
 				cf_draw_circle_fill2(manifold.contact_points[i], 3.f);
-				cf_draw_arrow(
-					manifold.contact_points[i],
-					cf_add(manifold.contact_points[i], cf_mul(manifold.n, 20.f)),
-					0.1f,
-					3.f
-				);
 
-				cf_draw_push_color(cf_color_green());
-				cf_draw_arrow(
-					manifold.contact_points[i],
-					cf_sub(manifold.contact_points[i], cf_mul(manifold.n, 20.f)),
-					0.1f,
-					3.f
-				);
-				cf_draw_pop_color();
+				if (record->messaged_b) {
+					cf_draw_arrow(
+						manifold.contact_points[i],
+						cf_add(manifold.contact_points[i], cf_mul(manifold.n, 20.f)),
+						0.1f,
+						3.f
+					);
+				}
+
+				if (record->messaged_a) {
+					cf_draw_push_color(cf_color_green());
+					cf_draw_arrow(
+						manifold.contact_points[i],
+						cf_sub(manifold.contact_points[i], cf_mul(manifold.n, 20.f)),
+						0.1f,
+						3.f
+					);
+					cf_draw_pop_color();
+				}
 			}
 			cf_draw_pop_color();
 		}
