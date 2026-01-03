@@ -69,7 +69,11 @@ ship_controller_update(
 			CF_V2 nozzle = cf_center(cf_sprite_get_slice(sprite->asset, "nozzle"));
 			CF_V2 projectile_pos = cf_mul(ship_transform, nozzle);
 			create_friendly_projectile(world, projectile_pos, transform->rotation);
+		} else {
+			ship->charge_progress = (CF_SECONDS - ship->last_fire_timestamp_s) / fire_interval_s;
 		}
+	} else {
+		ship->firing = false;
 	}
 }
 

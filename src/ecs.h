@@ -84,6 +84,7 @@ typedef struct {
 	bool firing;
 	float turning;
 	float last_fire_timestamp_s;
+	float charge_progress;
 } ship_t;
 
 BENT_POD_COMP(comp_ship, ship_t)

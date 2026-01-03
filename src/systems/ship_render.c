@@ -27,6 +27,7 @@ ship_render_update(
 		CF_V2 right_exhaust = cf_center(cf_sprite_get_slice(sprite->asset, "right-exhaust"));
 		CF_V2 left_brake = cf_center(cf_sprite_get_slice(sprite->asset, "left-brake"));
 		CF_V2 right_brake = cf_center(cf_sprite_get_slice(sprite->asset, "right-brake"));
+		CF_V2 muzzle = cf_center(cf_sprite_get_slice(sprite->asset, "muzzle"));
 
 		if (ship->thrusting) {
 			CF_Sprite exhaust = *spr_exhaust;
@@ -63,6 +64,16 @@ ship_render_update(
 			cf_draw_translate_v2(right_brake);
 			cf_draw_rotate(-0.5f * CF_PI);
 			cf_draw_sprite(&exhaust);
+			cf_draw_pop();
+		}
+
+		if (ship->firing && ship->charge_progress > 0.2f) {
+			CF_Sprite muzzle_flash = *spr_muzzle_flash;
+			cf_draw_push();
+			cf_draw_translate_v2(muzzle);
+			cf_draw_rotate(ship->charge_progress * 2.f * CF_PI);
+			cf_draw_scale(1.f - ship->charge_progress, 1.f - ship->charge_progress);
+			cf_sprite_draw(&muzzle_flash);
 			cf_draw_pop();
 		}
 
