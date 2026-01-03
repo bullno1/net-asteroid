@@ -19,7 +19,8 @@ set(SOURCES
 
 	"spatial_hash.c"
 
-	"scenes/test_spatial_hash.c"
+	"scenes/main_game.c"
+	"scenes/main_menu.c"
 	"scenes/test_collision_api.c"
 	"scenes/test_background.c"
 
@@ -49,8 +50,16 @@ compile_shader(
 )
 
 if (EMSCRIPTEN)
+	add_custom_target(copy-emscripten-shell
+		COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${CMAKE_CURRENT_SOURCE_DIR}/emscripten ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/emscripten
+	)
+	add_library(cute-emscripten-shell INTERFACE)
+	add_dependencies(cute-emscripten-shell copy-emscripten-shell)
+	target_link_options(cute-emscripten-shell INTERFACE --shell-file "${CMAKE_CURRENT_SOURCE_DIR}/emscripten/shell.html")
+
 	set_target_properties(net-asteroid PROPERTIES SUFFIX ".html")
 	target_compile_options(net-asteroid PRIVATE -fno-rtti -fno-exceptions -gsplit-dwarf)
+	target_link_libraries(net-asteroid PRIVATE cute-emscripten-shell)
 	target_link_options(net-asteroid PRIVATE
 		-sASYNCIFY=1
 		-sMALLOC=emmalloc-debug

@@ -70,7 +70,7 @@ update(void) {
 	cf_app_draw_onto_screen(true);
 }
 
-BGAME_SCENE(test_spatial_hash) = {
+BGAME_SCENE(main_game) = {
 	.init = init,
 	.update = update,
 	.cleanup = cleanup,
