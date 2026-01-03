@@ -5,23 +5,39 @@
 #include <bgame/ui.h>
 #include <bgame/ui/rich_text.h>
 #include <cute.h>
+#include <slopnet.h>
+#include "../globals.h"
+#include "../templates.h"
 #include "../ui.h"
 #include "../background.h"
 #include "../assets.h"
 #include "../ecs.h"
+#include "../fs.h"
 
 #define SCENE_VAR(TYPE, NAME) BGAME_PRIVATE_VAR(main_menu, TYPE, NAME)
 
 BGAME_DECLARE_SCENE_ALLOCATOR(main_menu)
 
+typedef enum {
+	MENU_STATE_ROOT,
+	MENU_STATE_MULTIPLAYER,
+} menu_state_T;
+
 SCENE_VAR(bent_world_t*, world)
 SCENE_VAR(background_t, background)
+SCENE_VAR(menu_state_T, menu_state)
 
-/*static CF_Rnd rnd = { 0 };*/
+static CF_Rnd rnd = { 0 };
 
 static void
 init(void) {
 	if (bent_init(&world, scene_allocator)) {
+		rnd = cf_rnd_seed(CF_TICKS);
+		menu_state = MENU_STATE_ROOT;
+
+		for (int i = 0; i < 10; ++i) {
+			create_asteroid(world, &rnd);
+		}
 	}
 
 	init_background(&background, img_background_stars);
@@ -63,10 +79,110 @@ menu_entry(const char* text) {
 }
 
 static void
+root_menu(void) {
+	BUI(CLAY_ID("TopSpacer"), {
+		.layout.sizing = { CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0) },
+	}) {
+	}
+
+	BUI(CLAY_ID("MenuButtons"), {
+		.layout = {
+			.padding = {
+				.top = 10,
+				.bottom = 50,
+			},
+			.layoutDirection = CLAY_TOP_TO_BOTTOM,
+			.childAlignment = {
+				.x = CLAY_ALIGN_X_CENTER,
+			},
+			.childGap = 20,
+		}
+	}) {
+		if (menu_entry("Single player")) {
+			bgame_push_scene("main_game");
+		}
+
+		if (menu_entry("Multiplayer")) {
+			menu_state = MENU_STATE_MULTIPLAYER;
+
+			if (snet_auth_state(g_snet) == SNET_UNAUTHORIZED && g_saved_snet_cookie) {
+				snet_login_with_cookie(g_snet, (snet_blob_t){
+					.ptr = g_saved_snet_cookie,
+					.size = strlen(g_saved_snet_cookie),
+				});
+			}
+		}
+
+		if (menu_entry("Quit")) {
+		}
+	}
+}
+
+static void
+multiplayer_menu(void) {
+	BUI(CLAY_ID("TopSpacer"), {
+		.layout.sizing = { CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0) },
+	}) {
+	}
+
+	BUI(CLAY_ID("MenuButtons"), {
+		.layout = {
+			.padding = {
+				.top = 10,
+				.bottom = 50,
+			},
+			.layoutDirection = CLAY_TOP_TO_BOTTOM,
+			.childAlignment = {
+				.x = CLAY_ALIGN_X_CENTER,
+			},
+			.childGap = 20,
+		}
+	}) {
+		snet_auth_state_t auth_state = snet_auth_state(g_snet);
+
+		switch (auth_state) {
+			case SNET_UNAUTHORIZED: {
+				if (menu_entry("Login with itch.io")) {
+					snet_login_with_itchio(g_snet);
+				}
+			} break;
+			case SNET_AUTHORIZING: {
+				menu_entry("Logging in...");
+			} break;
+			case SNET_AUTHORIZED:
+				menu_entry("Find game");
+				break;
+		}
+
+		if (menu_entry("Back")) {
+			menu_state = MENU_STATE_ROOT;
+		}
+	}
+}
+
+static void
 update(void) {
 	cf_app_update(fixed_update);
 	ecs_update_variable(world);
 	ecs_render(world);
+
+	// slopnet
+	{
+		const snet_event_t* event;
+		while ((event = snet_next_event(g_snet)) != NULL) {
+			if (event->type == SNET_EVENT_LOGIN_FINISHED) {
+				if (event->login.status == SNET_OK) {
+					BLOG_INFO("Logged in with token: " SNET_BLOB_FMT "\n", SNET_BLOB_FMT_ARGS(event->login.data));
+					cf_fs_write_string_range_to_file("/cookie", (char*)event->login.data.ptr, (char*)event->login.data.ptr + event->login.data.size);
+					sync_fs();
+				} else if (event->login.status == SNET_ERR_IO) {
+					BLOG_INFO("Network error\n");
+				} else if (event->login.status == SNET_ERR_REJECTED) {
+					BLOG_INFO("Logged failed with reason: " SNET_BLOB_FMT "\n", SNET_BLOB_FMT_ARGS(event->login.data));
+				}
+			}
+		}
+	}
 
 	// UI
 	{
@@ -82,31 +198,13 @@ update(void) {
 				.padding = CLAY_PADDING_ALL(10),
 			},
 		}) {
-			BUI(CLAY_ID("TopSpacer"), {
-				.layout.sizing = { CLAY_SIZING_GROW(0), CLAY_SIZING_GROW(0) },
-			}) {
-			}
-			BUI(CLAY_ID("MenuButtons"), {
-				.layout = {
-					.padding = {
-						.top = 10,
-						.bottom = 50,
-					},
-					.layoutDirection = CLAY_TOP_TO_BOTTOM,
-					.childAlignment = {
-						.x = CLAY_ALIGN_X_CENTER,
-					},
-					.childGap = 20,
-				}
-			}) {
-				if (menu_entry("Single player")) {
-					bgame_push_scene("main_game");
-				}
-
-				menu_entry("Multiplayer");
-
-				if (menu_entry("Quit")) {
-				}
+			switch (menu_state) {
+				case MENU_STATE_ROOT:
+					root_menu();
+					break;
+				case MENU_STATE_MULTIPLAYER:
+					multiplayer_menu();
+					break;
 			}
 		}
 		Clay_RenderCommandArray ui_commands = Clay_EndLayout();

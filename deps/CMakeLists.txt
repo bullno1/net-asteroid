@@ -33,3 +33,7 @@ target_include_directories(remodule INTERFACE remodule)
 # --- blibs --
 add_library(blibs INTERFACE)
 target_include_directories(blibs INTERFACE blibs)
+
+# --- slopnet ---
+set(SLOPNET_BUILD_CF OFF CACHE BOOL "")
+add_subdirectory("slopnet" EXCLUDE_FROM_ALL)

@@ -7,3 +7,6 @@
 [submodule "deps/remodule"]
 	path = deps/remodule
 	url = https://github.com/bullno1/remodule.git
+[submodule "deps/slopnet"]
+	path = deps/slopnet
+	url = https://github.com/bullno1/slopnet.git

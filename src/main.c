@@ -6,6 +6,9 @@
 #include <cute.h>
 #include <barena.h>
 #include <bgame/asset.h>
+#include <slopnet.h>
+#include "globals.h"
+#include "fs.h"
 
 static const char* WINDOW_TITLE = "Net asteroid";
 BGAME_VAR(bool, app_created) = false;
@@ -18,6 +21,11 @@ load_assets(void) {
 		// Optional tag filtering
 		bgame_asset_load_def(predefined_assets, asset);
 	}
+}
+
+static void
+snet_log(const char* fmt, va_list args, void* logctx) {
+	blog_vwrite(BLOG_LEVEL_DEBUG, fmt, __LINE__, fmt, args);
 }
 
 static void
@@ -44,6 +52,23 @@ init(int argc, const char** argv) {
 #endif
 
 		cf_app_init_imgui();
+		init_fs();
+
+		const char* user_dir = cf_fs_get_user_directory("bullno1", "asteroid-net");
+		cf_fs_set_write_directory(user_dir);
+		cf_fs_mount(user_dir, "/user", true);
+
+		size_t cookie_size;
+		char* cookie = cf_fs_read_entire_file_to_memory_and_nul_terminate("/user/cookie", &cookie_size);
+		if (cookie != NULL && cookie_size > 0) {
+			g_saved_snet_cookie = cookie;
+		}
+
+		g_snet = snet_init(&(snet_config_t){
+			.host = "snet-dev.bullno1.com",
+			.path = "/snet",
+			.log = snet_log,
+		});
 
 		app_created = true;
 	}
@@ -73,6 +98,7 @@ static void
 cleanup(void) {
 	bgame_clear_scene_stack();
 	bgame_asset_cleanup(&predefined_assets);
+	snet_cleanup(g_snet);
 	cf_destroy_app();
 
 	BLOG_DEBUG("--- Allocator stats ---");
@@ -82,6 +108,7 @@ cleanup(void) {
 static void
 update(void) {
 	bgame_asset_check_bundle(predefined_assets);
+	snet_update(g_snet);
 	bgame_scene_update();
 }
 

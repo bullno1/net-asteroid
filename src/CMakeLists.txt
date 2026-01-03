@@ -15,6 +15,8 @@ set(SOURCES
 	"systems/debug_control.c"
 	"background.c"
 	"ecs.c"
+	"globals.c"
+	"fs.c"
 	"assets.c"
 
 	"spatial_hash.c"
@@ -27,6 +29,7 @@ set(SOURCES
 	"gen/shaders/tiled.h"
 )
 add_bgame_app(net-asteroid "${SOURCES}")
+target_link_libraries(net-asteroid PRIVATE slopnet)
 
 function (compile_shader INPUT VAR_NAME OUTPUT)
 	if (NOT EMSCRIPTEN)
@@ -64,6 +67,7 @@ if (EMSCRIPTEN)
 		-sASYNCIFY=1
 		-sMALLOC=emmalloc-debug
 		-gseparate-dwarf
+		-lidbfs.js
 		--preload-file "${CMAKE_CURRENT_LIST_DIR}/../assets@/assets"
 	)
 endif()
