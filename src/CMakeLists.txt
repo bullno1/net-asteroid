@@ -41,7 +41,7 @@ function (compile_shader INPUT VAR_NAME OUTPUT)
 				-varname=${VAR_NAME}
 				-oheader=${OUTPUT}
 				${INPUT}
-			DEPENDS ${INPUT}
+			DEPENDS ${INPUT} cute-shaderc
 		)
 	endif ()
 endfunction ()

@@ -1,4 +1,5 @@
 #include <bgame/scene.h>
+#include <bgame/allocator.h>
 #include <bgame/allocator/tracked.h>
 #include <bgame/allocator/frame.h>
 #include <bgame/reloadable.h>
@@ -6,6 +7,7 @@
 #include <bgame/ui/rich_text.h>
 #include <cute.h>
 #include <slopnet.h>
+#include <barena.h>
 #include "../globals.h"
 #include "../templates.h"
 #include "../ui.h"
@@ -26,6 +28,9 @@ typedef enum {
 SCENE_VAR(bent_world_t*, world)
 SCENE_VAR(background_t, background)
 SCENE_VAR(menu_state_T, menu_state)
+SCENE_VAR(barena_t, game_list_arena)
+SCENE_VAR(snet_game_info_t*, game_list)
+SCENE_VAR(int, num_games)
 
 static CF_Rnd rnd = { 0 };
 
@@ -38,10 +43,18 @@ init(void) {
 		for (int i = 0; i < 10; ++i) {
 			create_asteroid(world, &rnd);
 		}
+
+		barena_init(&game_list_arena, bgame_arena_pool);
 	}
 
 	init_background(&background, img_background_stars);
 	load_ui_fonts();
+}
+
+static void
+cleanup(void) {
+	barena_reset(&game_list_arena);
+	bent_cleanup(&world);
 }
 
 static void
@@ -149,15 +162,74 @@ multiplayer_menu(void) {
 			case SNET_AUTHORIZING: {
 				menu_entry("Logging in...");
 			} break;
-			case SNET_AUTHORIZED:
-				menu_entry("Find game");
-				break;
+			case SNET_AUTHORIZED: {
+				snet_lobby_state_t lobby_state = snet_lobby_state(g_snet);
+				switch (lobby_state) {
+					case SNET_LISTING_GAMES:
+					case SNET_IN_LOBBY: {
+						for (int i = 0; i < num_games; ++i) {
+							const char* game_name = bgame_fmt("%.*s", (int)game_list[i].creator.size, (const char*)game_list[i].creator.ptr);
+							if (menu_entry(game_name)) {
+								snet_join_game(g_snet, game_list[i].join_token);
+							}
+						}
+
+						if (
+							lobby_state != SNET_LISTING_GAMES
+							&&
+							menu_entry("Refresh game list")
+						) {
+							snet_list_games(g_snet);
+						}
+
+						BUI(CLAY_ID_LOCAL("Separator"), {
+							.layout = {
+								.padding = {
+									.top = 10,
+									.bottom = 50,
+								},
+								.sizing = { CLAY_SIZING_GROW(0), CLAY_SIZING_FIT(0) },
+							},
+							.border = {
+								.color = bgame_ui_color_from_cf(cf_color_white()),
+								.width.bottom = 1,
+							}
+						}) {
+						}
+
+						if (menu_entry("Create game")) {
+							snet_create_game(g_snet, &(snet_game_options_t){
+								.visibility = SNET_GAME_PUBLIC,
+								.max_num_players = 2,
+							});
+						}
+					} break;
+					case SNET_CREATING_GAME: {
+						menu_entry("Creating game...");
+					} break;
+					case SNET_JOINING_GAME: {
+						menu_entry("Joining game...");
+					} break;
+					case SNET_JOINED_GAME: {
+					} break;
+				}
+			} break;
 		}
 
 		if (menu_entry("Back")) {
 			menu_state = MENU_STATE_ROOT;
 		}
 	}
+}
+
+static snet_blob_t
+copy_snet_blob(snet_blob_t blob) {
+	snet_blob_t copy = {
+		.size = blob.size,
+		.ptr = barena_memalign(&game_list_arena, blob.size, 1),
+	};
+	memcpy((void*)copy.ptr, blob.ptr, blob.size);
+	return copy;
 }
 
 static void
@@ -175,10 +247,33 @@ update(void) {
 					BLOG_INFO("Logged in with token: " SNET_BLOB_FMT "\n", SNET_BLOB_FMT_ARGS(event->login.data));
 					cf_fs_write_string_range_to_file("/cookie", (char*)event->login.data.ptr, (char*)event->login.data.ptr + event->login.data.size);
 					sync_fs();
+					snet_list_games(g_snet);
 				} else if (event->login.status == SNET_ERR_IO) {
 					BLOG_INFO("Network error\n");
 				} else if (event->login.status == SNET_ERR_REJECTED) {
 					BLOG_INFO("Logged failed with reason: " SNET_BLOB_FMT "\n", SNET_BLOB_FMT_ARGS(event->login.data));
+				}
+			} else if (event->type == SNET_EVENT_LIST_GAMES_FINISHED) {
+				if (event->list_games.status == SNET_OK) {
+					barena_reset(&game_list_arena);
+					num_games = event->list_games.num_games;
+					game_list = barena_memalign(
+						&game_list_arena,
+						sizeof(snet_game_info_t) * num_games,
+						_Alignof(snet_game_info_t)
+					);
+					for (int i = 0; i < num_games; ++i) {
+						game_list[i].creator = copy_snet_blob(event->list_games.games[i].creator);
+						game_list[i].join_token = copy_snet_blob(event->list_games.games[i].join_token);
+					}
+				}
+			} else if (event->type == SNET_EVENT_CREATE_GAME_FINISHED) {
+				if (event->create_game.status == SNET_OK) {
+					snet_join_game(g_snet, event->create_game.info.join_token);
+				}
+			} else if (event->type == SNET_EVENT_JOIN_GAME_FINISHED) {
+				if (event->join_game.status == SNET_OK) {
+					bgame_push_scene("main_game");
 				}
 			}
 		}
@@ -230,11 +325,6 @@ update(void) {
 	}
 
 	cf_app_draw_onto_screen(true);
-}
-
-static void
-cleanup(void) {
-	bent_cleanup(&world);
 }
 
 BGAME_SCENE(main_menu) = {

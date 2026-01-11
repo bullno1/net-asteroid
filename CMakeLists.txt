@@ -25,14 +25,14 @@ set_target_properties(
 	${CMAKE_BINARY_DIR}/bin/$<CONFIG>-$<IF:$<BOOL:${RELOADABLE}>,reloadable,static>
 )
 
-if (RELOADABLE)
-	set_target_properties(
-		physfs PROPERTIES
-		# some properties that successfully get applied here
-		LIBRARY_OUTPUT_DIRECTORY
-		${CMAKE_BINARY_DIR}/bin/$<CONFIG>-$<IF:$<BOOL:${RELOADABLE}>,reloadable,static>
-	)
-endif ()
+#if (RELOADABLE)
+	#set_target_properties(
+		#physfs PROPERTIES
+		## some properties that successfully get applied here
+		#LIBRARY_OUTPUT_DIRECTORY
+		#${CMAKE_BINARY_DIR}/bin/$<CONFIG>-$<IF:$<BOOL:${RELOADABLE}>,reloadable,static>
+	#)
+#endif ()
 
 # Then everything else to avoid leaking into deps
 
