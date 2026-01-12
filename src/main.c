@@ -7,8 +7,14 @@
 #include <barena.h>
 #include <bgame/asset.h>
 #include <slopnet.h>
+#include "slopsync.h"
+#include "ssync_schema.h"
 #include "globals.h"
 #include "fs.h"
+
+#if BGAME_RELOADABLE
+#include <bent.h>
+#endif
 
 static const char* WINDOW_TITLE = "Net asteroid";
 BGAME_VAR(bool, app_created) = false;
@@ -78,6 +84,13 @@ init(int argc, const char** argv) {
 	cf_app_set_title(WINDOW_TITLE);
 
 	load_assets();
+
+#if BGAME_RELOADABLE
+	bent_world_t* tmp_world = NULL;
+	bent_init(&tmp_world, bgame_default_allocator);
+	ssync_bent_sync_static_schema(tmp_world, &ssync_schema);
+	bent_cleanup(&tmp_world);
+#endif
 
 	if (bgame_current_scene() == NULL) {
 		bgame_push_scene("main_menu");

@@ -2,7 +2,7 @@
 
 ./build || true
 
-inotifywait -r -e CLOSE_WRITE -m src bgame | \
+inotifywait -r -e CLOSE_WRITE -m src bgame slopsync | \
     while read path action file
 	do
 		clear
