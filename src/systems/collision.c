@@ -11,10 +11,10 @@
 
 BENT_DECLARE_SYS(sys_collision)
 
-#define MIRROR_X_POSITIVE_BIT (bent_index_t)(1 << ((sizeof(bent_index_t) * CHAR_BIT) - 1))
-#define MIRROR_X_NEGATIVE_BIT (bent_index_t)(1 << ((sizeof(bent_index_t) * CHAR_BIT) - 2))
-#define MIRROR_Y_POSITIVE_BIT (bent_index_t)(1 << ((sizeof(bent_index_t) * CHAR_BIT) - 3))
-#define MIRROR_Y_NEGATIVE_BIT (bent_index_t)(1 << ((sizeof(bent_index_t) * CHAR_BIT) - 4))
+#define MIRROR_X_POSITIVE_BIT (bent_index_t)(1u << ((sizeof(bent_index_t) * CHAR_BIT) - 1))
+#define MIRROR_X_NEGATIVE_BIT (bent_index_t)(1u << ((sizeof(bent_index_t) * CHAR_BIT) - 2))
+#define MIRROR_Y_POSITIVE_BIT (bent_index_t)(1u << ((sizeof(bent_index_t) * CHAR_BIT) - 3))
+#define MIRROR_Y_NEGATIVE_BIT (bent_index_t)(1u << ((sizeof(bent_index_t) * CHAR_BIT) - 4))
 
 typedef struct {
 	bool messaged_a;
