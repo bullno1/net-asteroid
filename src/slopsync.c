@@ -77,10 +77,12 @@ sys_ssync_rem_prop_group(
 static bool
 sys_ssync_has_prop_group(
 	void* userdata,
-	ssync_net_id_t obj_id,
+	ssync_net_id_t net_id,
 	ssync_local_id_t prop_group_id
 ) {
-	return false;
+	sys_slopsync_t* sys = userdata;
+	bent_t local = ssync_net_to_local(sys, net_id);
+	return bent_has(sys->world, local, (bent_comp_reg_t){ .id = prop_group_id });
 }
 
 static void
@@ -182,7 +184,7 @@ BENT_DEFINE_SYS(sys_slopsync) = {
 	.require = BENT_COMP_LIST(&comp_slopsync_link),
 	.add = sys_ssync_add,
 	.remove = sys_ssync_remove,
-	.update_mask = UPDATE_MASK_VAR_PRE,
+	.update_mask = UPDATE_MASK_VAR_PRE | UPDATE_MASK_RENDER_DEBUG,
 	.update = sys_ssync_update,
 };
 
