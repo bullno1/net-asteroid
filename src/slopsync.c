@@ -45,7 +45,10 @@ sys_ssync_create(void* userdata, ssync_net_id_t net_id) {
 	sys_slopsync_t* sys = userdata;
 
 	bent_t local = bent_create(sys->world);
-	bent_add_comp_slopsync_link(sys->world, local, &(slopsync_link_t){ .id = net_id });
+	bent_add_comp_slopsync_link(sys->world, local, &(slopsync_link_t){
+		.id = net_id,
+		.flags = ssync_obj_info(sys->ssync, net_id)->flags,
+	});
 }
 
 static void
