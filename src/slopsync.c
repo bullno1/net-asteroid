@@ -94,12 +94,11 @@ sys_ssync_sync(
 	ssync_ctx_t* ctx,
 	ssync_net_id_t obj_id
 ) {
-	bent_world_t* world = userdata;
-	sys_slopsync_t* sys = bent_get_sys_data(world, sys_slopsync);
+	sys_slopsync_t* sys = userdata;
 	bent_t ent = ssync_net_to_local(sys, obj_id);
 
 	if (ssync_prop_group(ctx, comp_transform.id)) {
-		transform_t* transform = bent_get_comp_transform(world, ent);
+		transform_t* transform = bent_get_comp_transform(sys->world, ent);
 
 		ssync_prop_float(ctx, &transform->current.translation.x, 3, SSYNC_PROP_INTERPOLATE | SSYNC_PROP_POSITION_X);
 		ssync_prop_float(ctx, &transform->current.translation.y, 3, SSYNC_PROP_INTERPOLATE | SSYNC_PROP_POSITION_Y);
@@ -193,9 +192,10 @@ BENT_DEFINE_SYS(sys_slopsync) = {
 
 void
 ssync_bent_sync_static_schema(bent_world_t* world, const ssync_static_schema_t* schema) {
-	size_t size = ssync_schema_size(sys_ssync_sync, world);
+	sys_slopsync_t* sys = bent_get_sys_data(world, sys_slopsync);
+	size_t size = ssync_info(sys->ssync).schema_size;
 	uint8_t* content = bgame_alloc_for_frame(size, _Alignof(uint8_t));
-	ssync_write_schema(sys_ssync_sync, world, content, size);
+	ssync_write_schema(sys->ssync, content);
 	uint64_t hash = bhash_hash(content, size);
 
 	if (size == schema->size && hash == schema->hash) {
