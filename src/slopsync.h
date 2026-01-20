@@ -8,7 +8,7 @@ typedef struct {
 	const char* filename;
 	uint64_t hash;
 	size_t size;
-	const uint8_t* content;
+	const char* content;
 } ssync_static_schema_t;
 
 typedef struct {

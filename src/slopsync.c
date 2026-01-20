@@ -194,7 +194,7 @@ void
 ssync_bent_sync_static_schema(bent_world_t* world, const ssync_static_schema_t* schema) {
 	sys_slopsync_t* sys = bent_get_sys_data(world, sys_slopsync);
 	size_t size = ssync_info(sys->ssync).schema_size;
-	uint8_t* content = bgame_alloc_for_frame(size, _Alignof(uint8_t));
+	char* content = bgame_alloc_for_frame(size, _Alignof(uint8_t));
 	ssync_write_schema(sys->ssync, content);
 	uint64_t hash = bhash_hash(content, size);
 
@@ -216,20 +216,19 @@ ssync_bent_sync_static_schema(bent_world_t* world, const ssync_static_schema_t* 
 		"#include \"slopsync.h\"\n\n"
 	);
 
-	fprintf(file, "static const uint8_t ssync_schema_content[%zu] = {", size);
-	for (size_t i = 0; i < size; ++i) {
-		if ((i % 16) == 0) {
-			fprintf(file, "\n\t");
-		}
-		fprintf(file, "0x%02X,", content[i]);
-	}
-	fprintf(file, "\n};\n\n");
-
 	fprintf(file, "static const ssync_static_schema_t ssync_schema = {\n");
 	fprintf(file, "\t.filename = __FILE__,\n");
 	fprintf(file, "\t.size = %zuull,\n", size);
 	fprintf(file, "\t.hash = %" PRIu64 "ull,\n", hash);
-	fprintf(file, "\t.content = ssync_schema_content,\n");
+	fprintf(file, "\t.content =\n");
+
+	int line_width = 76;
+	for (size_t i = 0; i < size; i += line_width) {
+		int remaining_len = (int)size - i;
+		int len = line_width < remaining_len ? line_width : remaining_len;
+		fprintf(file, "\t\t\"%.*s\"\n", len, &content[i]);
+	}
+
 	fprintf(file, "};\n");
 
 	fclose(file);

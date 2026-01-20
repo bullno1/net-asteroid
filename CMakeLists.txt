@@ -101,10 +101,6 @@ else()
 	)
 endif()
 
-set(CMAKE_SKIP_BUILD_RPATH FALSE)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-set(CMAKE_INSTALL_RPATH "\${ORIGIN}")
-
 add_subdirectory(bgame)
 add_subdirectory(slopsync)
 add_subdirectory(src)
