@@ -10,6 +10,7 @@
 #define SSYNC_COMP(NAME) \
 	void ssync_fn__##NAME(ssync_ctx_t* ctx, bent_world_t* world, bent_t entity); \
 	slopsync_comp_spec_t ssync_spec__##NAME = { \
+		.name = #NAME, \
 		.comp = &NAME, \
 		.sync_fn = ssync_fn__##NAME, \
 	}; \

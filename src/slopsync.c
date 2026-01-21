@@ -146,6 +146,9 @@ sys_ssync_init(void* userdata, bent_world_t* world) {
 		sizeof(sys->comp_specs[0]),
 		slopsync_comp_spec_cmp
 	);
+	BARRAY_FOREACH_REF(spec, sys->comp_specs) {
+		BLOG_DEBUG("Registered %s", spec->name);
+	}
 
 	ssync_config_t ssync_config = {
 		.max_message_size = snet_max_message_size(),
