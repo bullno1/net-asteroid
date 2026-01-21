@@ -15,6 +15,7 @@ set(SOURCES
 	"systems/debug_control.c"
 	"background.c"
 	"ecs.c"
+	"ssync_comps.c"
 	"slopsync.c"
 	"globals.c"
 	"fs.c"

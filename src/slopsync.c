@@ -1,3 +1,4 @@
+// vim: set foldmethod=marker foldlevel=0:
 #include "slopsync.h"
 #include <slopnet.h>
 #include <bent.h>
@@ -7,16 +8,20 @@
 #include <errno.h>
 #include <inttypes.h>
 #include <bhash.h>
+#include <barray.h>
 #include "ecs.h"
 
 BENT_DEFINE_POD_COMP(comp_slopsync_link, slopsync_link_t)
 
 BENT_DECLARE_SYS(sys_slopsync)
 
+AUTOLIST_IMPL(ssync__comps)
+
 typedef struct {
 	ssync_t* ssync;
 	bent_world_t* world;
 
+	barray(slopsync_comp_spec_t) comp_specs;
 	BHASH_TABLE(ssync_net_id_t, bent_t) net_to_local;
 } sys_slopsync_t;
 
@@ -39,6 +44,8 @@ sys_ssync_realloc(
 	sys_slopsync_t* sys = userdata;
 	return bgame_realloc(ptr, size, bent_memctx(sys->world));
 }
+
+// ssync client {{{
 
 static void
 sys_ssync_create(void* userdata, ssync_net_id_t net_id) {
@@ -95,15 +102,25 @@ sys_ssync_sync(
 	ssync_net_id_t obj_id
 ) {
 	sys_slopsync_t* sys = userdata;
-	bent_t ent = ssync_net_to_local(sys, obj_id);
+	bent_t entity = ssync_net_to_local(sys, obj_id);
 
-	if (ssync_prop_group(ctx, comp_transform.id)) {
-		transform_t* transform = bent_get_comp_transform(sys->world, ent);
-
-		ssync_prop_float(ctx, &transform->current.translation.x, 3, SSYNC_PROP_INTERPOLATE | SSYNC_PROP_POSITION_X);
-		ssync_prop_float(ctx, &transform->current.translation.y, 3, SSYNC_PROP_INTERPOLATE | SSYNC_PROP_POSITION_Y);
-		ssync_prop_float(ctx, &transform->current.rotation, 3, SSYNC_PROP_INTERPOLATE | SSYNC_PROP_ROTATION);
+	BARRAY_FOREACH_REF(spec, sys->comp_specs) {
+		if (ssync_prop_group(ctx, spec->comp->id)) {
+			spec->sync_fn(ctx, sys->world, entity);
+		}
 	}
+}
+
+// }}}
+
+// bent system {{{
+
+static int
+slopsync_comp_spec_cmp(const void* lhs_ptr, const void* rhs_ptr) {
+	const slopsync_comp_spec_t* lhs = lhs_ptr;
+	const slopsync_comp_spec_t* rhs = rhs_ptr;
+
+	return strcmp(lhs->name, rhs->name);
 }
 
 static void
@@ -114,6 +131,21 @@ sys_ssync_init(void* userdata, bent_world_t* world) {
 	bhash_config_t hconfig = bhash_config_default();
 	hconfig.memctx = bent_memctx(world);
 	bhash_reinit(&sys->net_to_local, hconfig);
+
+	// Gather component sync functions
+	barray_clear(sys->comp_specs);
+	AUTOLIST_FOREACH(itr, ssync__comps) {
+		slopsync_comp_spec_t* spec = itr->value_addr;
+		barray_push(sys->comp_specs, *spec, bent_memctx(world));
+	}
+
+	// Sort for a deterministic list
+	qsort(
+		sys->comp_specs,
+		barray_len(sys->comp_specs),
+		sizeof(sys->comp_specs[0]),
+		slopsync_comp_spec_cmp
+	);
 
 	ssync_config_t ssync_config = {
 		.max_message_size = snet_max_message_size(),
@@ -135,6 +167,7 @@ sys_ssync_cleanup(void* userdata, bent_world_t* world) {
 	sys_slopsync_t* sys = userdata;
 
 	ssync_cleanup(sys->ssync);
+	barray_free(sys->comp_specs, bent_memctx(world));
 	bhash_cleanup(&sys->net_to_local);
 }
 
@@ -177,6 +210,8 @@ sys_ssync_update(
 		ssync_update(sys->ssync, CF_DELTA_TIME);
 	}
 }
+
+// }}}
 
 BENT_DEFINE_SYS(sys_slopsync) = {
 	.size = sizeof(sys_slopsync_t),
@@ -232,4 +267,8 @@ ssync_bent_sync_static_schema(bent_world_t* world, const ssync_static_schema_t* 
 	fprintf(file, "};\n");
 
 	fclose(file);
+}
+
+void
+(ssync_prop_asset)(ssync_ctx_t* ctx, const void** asset) {
 }
