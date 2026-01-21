@@ -4,10 +4,13 @@
 #include <blog.h>
 #include <cute.h>
 #include <bent.h>
+#include <slopnet.h>
 #include <bgame/asset.h>
 #include "../ecs.h"
+#include "../slopsync.h"
 #include "../templates.h"
 #include "../background.h"
+#include "../globals.h"
 
 #define SCENE_VAR(TYPE, NAME) BGAME_PRIVATE_VAR(test_spatial_hash, TYPE, NAME)
 
@@ -22,6 +25,7 @@ static CF_Rnd rnd = { 0 };
 static void
 init(void) {
 	if (bent_init(&world, scene_allocator)) {
+		ssync_attach_snet(world, g_snet);
 		rnd = cf_rnd_seed(CF_TICKS);
 
 		for (int i = 0; i < 7; ++i) {

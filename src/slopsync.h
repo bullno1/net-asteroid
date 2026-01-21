@@ -5,6 +5,8 @@
 #include <autolist.h>
 #include <bent.h>
 
+struct snet_s;
+
 #define ssync_prop_asset(CTX, PTR) ssync_prop_asset((CTX), (const void**)(PTR))
 
 #define SSYNC_COMP(NAME) \
@@ -82,14 +84,8 @@ ssync_bent_sync_static_schema(bent_world_t* world, const ssync_static_schema_t* 
 void
 (ssync_prop_asset)(ssync_ctx_t* ctx, const void** asset);
 
-const ssync_t*
-ssync_bent_client(bent_world_t* world);
-
-const ssync_info_t*
-ssync_bent_info(bent_world_t* world);
-
-const ssync_obj_info_t*
-ssync_bent_entity_info(bent_world_t* world, bent_t ent);
+void
+ssync_attach_snet(bent_world_t* world, struct snet_s* snet);
 
 AUTOLIST_DECLARE(ssync__comps)
 

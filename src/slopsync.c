@@ -10,7 +10,9 @@
 #include <inttypes.h>
 #include <bhash.h>
 #include <barray.h>
+#include <dcimgui.h>
 #include "ecs.h"
+#include "systems/debug_control.h"
 
 BENT_DEFINE_POD_COMP(comp_slopsync_link, slopsync_link_t)
 
@@ -21,6 +23,7 @@ AUTOLIST_IMPL(ssync__comps)
 typedef struct {
 	ssync_t* ssync;
 	bent_world_t* world;
+	snet_t* snet;
 
 	barray(slopsync_comp_spec_t) comp_specs;
 
@@ -116,6 +119,14 @@ sys_ssync_sync(
 	}
 }
 
+static void
+sys_ssync_send_msg(void* userdata, ssync_blob_t message, bool reliable) {
+	sys_slopsync_t* sys = userdata;
+	if (sys->snet != NULL) {
+		snet_send(sys->snet, (snet_blob_t){ .ptr = message.data, .size = message.size }, reliable);
+	}
+}
+
 // }}}
 
 // bent system {{{
@@ -182,6 +193,8 @@ sys_ssync_init(void* userdata, bent_world_t* world) {
 		.rem_prop_group = sys_ssync_rem_prop_group,
 		.has_prop_group = sys_ssync_has_prop_group,
 		.sync = sys_ssync_sync,
+		.send_msg = sys_ssync_send_msg,
+		.interpolation_ratio = 2.0f,
 
 		.userdata = sys,
 	};
@@ -233,9 +246,36 @@ sys_ssync_update(
 	bent_index_t num_entities
 ) {
 	sys_slopsync_t* sys = userdata;
+	bool debug_enabled = ecs_is_debug_enabled(world, sys_slopsync);
 
 	if (update_mask == UPDATE_MASK_VAR_PRE) {
+		if (sys->snet != NULL && snet_lobby_state(sys->snet) == SNET_JOINED_GAME) {
+			const snet_event_t* event;
+			while ((event = snet_next_event(sys->snet)) != NULL) {
+				if (event->type == SNET_EVENT_MESSAGE) {
+					ssync_process_message(sys->ssync, (ssync_blob_t){
+						.data = event->message.data.ptr,
+						.size = event->message.data.size,
+					});
+				}
+			}
+		}
+
 		ssync_update(sys->ssync, CF_DELTA_TIME);
+	}
+
+	if (debug_enabled && update_mask == UPDATE_MASK_RENDER_DEBUG) {
+		if (ImGui_Begin("Debug", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+			if (ImGui_CollapsingHeader("Network", ImGuiTreeNodeFlags_DefaultOpen)) {
+				ssync_info_t info = ssync_info(sys->ssync);
+				float client_time = (float)info.client_time / 1000.f;
+				float interp_time = (float)info.interp_time / 1000.f;
+				float server_time = (float)info.server_time / 1000.f;
+				ImGui_Text("Interp time offset: %f", interp_time - client_time);
+				ImGui_Text("Server time offset: %f", server_time - client_time);
+			}
+		}
+		ImGui_End();
 	}
 }
 
@@ -322,4 +362,10 @@ void
 			*asset_ptr = NULL;
 		}
 	}
+}
+
+void
+ssync_attach_snet(bent_world_t* world, struct snet_s* snet) {
+	sys_slopsync_t* sys = bent_get_sys_data(world, sys_slopsync);
+	sys->snet = snet;
 }
