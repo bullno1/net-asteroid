@@ -3,6 +3,7 @@
 #include <slopnet.h>
 #include <bent.h>
 #include <bgame/allocator/frame.h>
+#include <bgame/asset.h>
 #include <blog.h>
 #include <string.h>
 #include <errno.h>
@@ -22,6 +23,10 @@ typedef struct {
 	bent_world_t* world;
 
 	barray(slopsync_comp_spec_t) comp_specs;
+
+	BHASH_TABLE(const void*, bhash_hash_t) asset_to_hash;
+	BHASH_TABLE(bhash_hash_t, const void*) hash_to_asset;
+
 	BHASH_TABLE(ssync_net_id_t, bent_t) net_to_local;
 } sys_slopsync_t;
 
@@ -123,6 +128,11 @@ slopsync_comp_spec_cmp(const void* lhs_ptr, const void* rhs_ptr) {
 	return strcmp(lhs->name, rhs->name);
 }
 
+static bhash_hash_t
+ssync_identity(const void* key, size_t size) {
+	return *(const bhash_hash_t*)key;
+}
+
 static void
 sys_ssync_init(void* userdata, bent_world_t* world) {
 	sys_slopsync_t* sys = userdata;
@@ -150,6 +160,19 @@ sys_ssync_init(void* userdata, bent_world_t* world) {
 		BLOG_DEBUG("Registered %s", spec->name);
 	}
 
+	hconfig.hash = ssync_identity;
+	bhash_reinit(&sys->hash_to_asset, hconfig);
+	bhash_reinit(&sys->asset_to_hash, hconfig);
+	bhash_clear(&sys->hash_to_asset);
+	bhash_clear(&sys->asset_to_hash);
+	BGAME_FOREACH_DEFINED_ASSET(asset) {
+		bhash_hash_t hash = bhash_hash(asset->name, strlen(asset->name));
+		const void* asset_var = asset->var;
+
+		bhash_put(&sys->hash_to_asset, hash, asset_var);
+		bhash_put(&sys->asset_to_hash, asset_var, hash);
+	}
+
 	ssync_config_t ssync_config = {
 		.max_message_size = snet_max_message_size(),
 		.realloc = sys_ssync_realloc,
@@ -172,6 +195,8 @@ sys_ssync_cleanup(void* userdata, bent_world_t* world) {
 	ssync_cleanup(sys->ssync);
 	barray_free(sys->comp_specs, bent_memctx(world));
 	bhash_cleanup(&sys->net_to_local);
+	bhash_cleanup(&sys->asset_to_hash);
+	bhash_cleanup(&sys->hash_to_asset);
 }
 
 static void
@@ -273,5 +298,28 @@ ssync_bent_sync_static_schema(bent_world_t* world, const ssync_static_schema_t* 
 }
 
 void
-(ssync_prop_asset)(ssync_ctx_t* ctx, const void** asset) {
+(ssync_prop_asset)(ssync_ctx_t* ctx, const void** asset_ptr) {
+	sys_slopsync_t* sys = ssync_ctx_userdata(ctx);
+
+	bhash_hash_t hash;
+	if (ssync_mode(ctx) == SSYNC_MODE_WRITE) {
+		const void* asset = *asset_ptr;
+		bhash_index_t index = bhash_find(&sys->asset_to_hash, asset);
+		if (bhash_is_valid(index)) {
+			hash = sys->asset_to_hash.values[index];
+		} else {
+			hash = 0;
+		}
+	}
+
+	ssync_prop_u64(ctx, &hash, SSYNC_PROP_DEFAULT);
+
+	if (ssync_mode(ctx) == SSYNC_MODE_READ) {
+		bhash_index_t index = bhash_find(&sys->hash_to_asset, hash);
+		if (bhash_is_valid(index)) {
+			*asset_ptr = sys->hash_to_asset.values[index];
+		} else {
+			*asset_ptr = NULL;
+		}
+	}
 }

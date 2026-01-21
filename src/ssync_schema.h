@@ -4,9 +4,9 @@
 
 static const ssync_static_schema_t ssync_schema = {
 	.filename = __FILE__,
-	.size = 78ull,
-	.hash = 170864501202384896ull,
+	.size = 87ull,
+	.hash = 5268762263146562766ull,
 	.content =
-		"AAoAAAIAAAAAAAAAAwABBgABBgABBkAAAQAAAAABAAAAAAMAAAAAAQYAAQYAAAMAAQYKAQYSAQZC"
-		"AA"
+		"AAoAAAMAAAAAAAAAAAAAAwABBgABBgABBkAAAQAAAAABAAAAAAMAAAAAAQYAAQYAAQAAAAADAAEG"
+		"CgEGEgEGQgA"
 };
