@@ -273,6 +273,9 @@ sys_ssync_update(
 				float server_time = (float)info.server_time / 1000.f;
 				ImGui_Text("Interp time offset: %f", interp_time - client_time);
 				ImGui_Text("Server time offset: %f", server_time - client_time);
+
+				ImGui_Text("Incoming snapshots: %d", info.num_incoming_snapshots);
+				ImGui_Text("Outgoing snapshots: %d", info.num_outgoing_snapshots);
 			}
 		}
 		ImGui_End();
