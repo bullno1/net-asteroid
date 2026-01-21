@@ -31,7 +31,7 @@ load_assets(void) {
 
 static void
 snet_log(const char* fmt, va_list args, void* logctx) {
-	blog_vwrite(BLOG_LEVEL_DEBUG, fmt, __LINE__, fmt, args);
+	blog_vwrite(BLOG_LEVEL_DEBUG, __FILE__, __LINE__, fmt, args);
 }
 
 static void

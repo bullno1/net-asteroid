@@ -8,6 +8,7 @@
 #include <cute.h>
 #include <slopnet.h>
 #include <barena.h>
+#include "../ssync_schema.h"
 #include "../globals.h"
 #include "../templates.h"
 #include "../ui.h"
@@ -201,6 +202,10 @@ multiplayer_menu(void) {
 							snet_create_game(g_snet, &(snet_game_options_t){
 								.visibility = SNET_GAME_PUBLIC,
 								.max_num_players = 2,
+								.data = {
+									.ptr = ssync_schema.content,
+									.size = ssync_schema.size,
+								},
 							});
 						}
 					} break;
