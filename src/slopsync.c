@@ -268,11 +268,6 @@ sys_ssync_update(
 		if (ImGui_Begin("Debug", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
 			if (ImGui_CollapsingHeader("Network", ImGuiTreeNodeFlags_DefaultOpen)) {
 				ssync_info_t info = ssync_info(sys->ssync);
-				float client_time = (float)info.client_time / 1000.f;
-				float interp_time = (float)info.interp_time / 1000.f;
-				float server_time = (float)info.server_time / 1000.f;
-				ImGui_Text("Interp time offset: %f", interp_time - client_time);
-				ImGui_Text("Server time offset: %f", server_time - client_time);
 
 				ImGui_Text("Incoming snapshots: %d", info.num_incoming_snapshots);
 				ImGui_Text("Outgoing snapshots: %d", info.num_outgoing_snapshots);
