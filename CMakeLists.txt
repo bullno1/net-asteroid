@@ -5,9 +5,9 @@ option(RELOADABLE "Is the program reloadable" ON)
 
 # Fix output dir
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR})
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG>-$<IF:$<BOOL:${RELOADABLE}>,reloadable,static>)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG>-$<IF:$<BOOL:${RELOADABLE}>,reloadable,static>)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG>-$<IF:$<BOOL:${RELOADABLE}>,reloadable,static>)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG>-$<IF:$<BOOL:${RELOADABLE}>,reloadable,static>$<$<PLATFORM_ID:Emscripten>:-web>)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG>-$<IF:$<BOOL:${RELOADABLE}>,reloadable,static>$<$<PLATFORM_ID:Emscripten>:-web>)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG>-$<IF:$<BOOL:${RELOADABLE}>,reloadable,static>$<$<PLATFORM_ID:Emscripten>:-web>)
 
 include(CheckIPOSupported)
 check_ipo_supported(RESULT IPO_SUPPORTED)
