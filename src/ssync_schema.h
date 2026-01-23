@@ -1,6 +1,6 @@
 #pragma once
 
-#include "slopsync.h"
+#include <slopsync/schema.h>
 
 static const ssync_static_schema_t ssync_schema = {
 	.filename = __FILE__,

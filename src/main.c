@@ -7,6 +7,7 @@
 #include <barena.h>
 #include <bgame/asset.h>
 #include <slopnet.h>
+#include <slopsync/schema.h>
 #include "slopsync.h"
 #include "ssync_schema.h"
 #include "globals.h"
@@ -88,7 +89,7 @@ init(int argc, const char** argv) {
 #if BGAME_RELOADABLE
 	bent_world_t* tmp_world = NULL;
 	bent_init(&tmp_world, bgame_default_allocator);
-	ssync_bent_sync_static_schema(tmp_world, &ssync_schema);
+	ssync_sync_static_schema(ssync_client(tmp_world), &ssync_schema);
 	bent_cleanup(&tmp_world);
 #endif
 

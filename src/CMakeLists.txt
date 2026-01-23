@@ -31,7 +31,7 @@ set(SOURCES
 	"gen/shaders/tiled.h"
 )
 add_bgame_app(net-asteroid "${SOURCES}")
-target_link_libraries(net-asteroid PRIVATE slopnet slopsync-client)
+target_link_libraries(net-asteroid PRIVATE slopnet slopsync-client slopsync-static-schema)
 
 function (compile_shader INPUT VAR_NAME OUTPUT)
 	if (NOT EMSCRIPTEN)

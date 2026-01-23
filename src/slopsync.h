@@ -36,13 +36,6 @@ struct snet_s;
 	static void ssync_fn_sync__##NAME(ssync_ctx_t* ctx, bent_world_t* world, bent_t entity, TYPE* comp)
 
 typedef struct {
-	const char* filename;
-	uint64_t hash;
-	size_t size;
-	const char* content;
-} ssync_static_schema_t;
-
-typedef struct {
 	ssync_net_id_t id;
 	ssync_obj_flags_t flags;
 } slopsync_link_t;
@@ -79,13 +72,13 @@ ssync_register_control_callback(
 );
 
 void
-ssync_bent_sync_static_schema(bent_world_t* world, const ssync_static_schema_t* schema);
-
-void
 (ssync_prop_asset)(ssync_ctx_t* ctx, const void** asset);
 
 void
 ssync_attach_snet(bent_world_t* world, struct snet_s* snet);
+
+ssync_t*
+ssync_client(bent_world_t* world);
 
 AUTOLIST_DECLARE(ssync__comps)
 
