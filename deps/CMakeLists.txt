@@ -37,3 +37,7 @@ target_include_directories(blibs INTERFACE blibs)
 # --- slopnet ---
 set(SLOPNET_BUILD_CF OFF CACHE BOOL "")
 add_subdirectory("slopnet" EXCLUDE_FROM_ALL)
+
+# --- slopsync ---
+set(SLOPSYNC_BUILD_DEPS OFF CACHE BOOL "")
+add_subdirectory("slopsync" EXCLUDE_FROM_ALL)

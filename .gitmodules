@@ -10,3 +10,6 @@
 [submodule "deps/slopnet"]
 	path = deps/slopnet
 	url = https://github.com/bullno1/slopnet.git
+[submodule "deps/slopsync"]
+	path = deps/slopsync
+	url = https://github.com/bullno1/slopsync.git

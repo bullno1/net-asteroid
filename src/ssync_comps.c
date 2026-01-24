@@ -19,10 +19,13 @@ SSYNC_TYPED_COMP(comp_sprite, sprite_t) {
 		asset = comp->asset;
 	}
 
-	ssync_prop_asset(ctx, &comp->asset);
+	ssync_prop_asset(ctx, &asset);
 
 	if (ssync_mode(ctx) == SSYNC_MODE_READ && asset != comp->asset) {
-		comp->instance = *asset;
+		comp->asset = asset;
+		if (asset != NULL) {
+			comp->instance = *asset;
+		}
 	}
 }
 

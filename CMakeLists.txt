@@ -102,5 +102,4 @@ else()
 endif()
 
 add_subdirectory(bgame)
-add_subdirectory(slopsync)
 add_subdirectory(src)
