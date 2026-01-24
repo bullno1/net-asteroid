@@ -1,4 +1,5 @@
 #include "collision.h"
+#include "../slopsync.h"
 #include <blog.h>
 
 #define COLLISION_RESPONSE_RULE(NAME) \
@@ -45,6 +46,7 @@ process_asteroid(
 static const collision_response_rule_t rule_asteroid = {
 	.callback = process_asteroid,
 	.require = BENT_COMP_LIST(&comp_asteroid),
+	.exclude = BENT_COMP_LIST(&comp_slopsync_remote),
 };
 COLLISION_RESPONSE_RULE(rule_asteroid)
 
@@ -59,5 +61,6 @@ process_projectile(
 static const collision_response_rule_t rule_projectile = {
 	.callback = process_projectile,
 	.require = BENT_COMP_LIST(&comp_projectile),
+	.exclude = BENT_COMP_LIST(&comp_slopsync_remote),
 };
 COLLISION_RESPONSE_RULE(rule_projectile)

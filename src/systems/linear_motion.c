@@ -1,4 +1,5 @@
 #include "../ecs.h"
+#include "../slopsync.h"
 
 static void
 linear_motion_update(
@@ -21,4 +22,5 @@ BENT_DEFINE_SYS(sys_linear_motion) = {
 	.update_mask = UPDATE_MASK_FIXED,
 	.update = linear_motion_update,
 	.require = BENT_COMP_LIST(&comp_linear_motion, &comp_transform),
+	.exclude = BENT_COMP_LIST(&comp_slopsync_remote),
 };

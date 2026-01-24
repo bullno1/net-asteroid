@@ -1,4 +1,5 @@
 #include "../ecs.h"
+#include "../slopsync.h"
 #include <bgame/collision.h>
 #include <cute.h>
 
@@ -37,5 +38,8 @@ BENT_DEFINE_SYS(sys_offscreen_cull) = {
 		&comp_transform,
 		&comp_offscreen_cull,
 		&comp_collider
+	),
+	.exclude = BENT_COMP_LIST(
+		&comp_slopsync_remote
 	),
 };

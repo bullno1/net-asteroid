@@ -204,6 +204,7 @@ collision_update(
 			bgame_transform_t* transform = &bent_get_comp_transform(world, ent)->current;
 			CF_M3x2 mat = cf_make_transform_TSR(transform->translation, transform->scale, transform->rotation);
 			collider_t* collider = bent_get_comp_collider(world, ent);
+			if (collider->shape == NULL) { continue; }
 
 			CF_Aabb transformed_aabb = bgame_make_aabb_from_shape(collider->shape, mat);
 			bhash_put(&sys->aabb_cache, ent, transformed_aabb);  // Cache for checking later
@@ -375,6 +376,7 @@ collision_update(
 				transform->rotation
 			);
 			collider_t* collider = bent_get_comp_collider(world, ent);
+			if (collider->shape == NULL) { continue; }
 
 			CF_Aabb transformed_aabb = { 0 };
 			bhash_index_t index = bhash_find(&sys->aabb_cache, ent);

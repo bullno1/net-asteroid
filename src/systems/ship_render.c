@@ -16,6 +16,7 @@ ship_render_update(
 		CF_M3x2 transform = get_interpolated_transform(bent_get_comp_transform(world, ent));
 		sprite_t* sprite = bent_get_comp_sprite(world, ent);
 		ship_t* ship = bent_get_comp_ship(world, ent);
+		if (sprite->asset == NULL) { continue; }
 
 		cf_draw_push_layer(layer);
 		cf_draw_push();

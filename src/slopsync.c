@@ -1,6 +1,7 @@
 // vim: set foldmethod=marker foldlevel=0:
 #include "slopsync.h"
 #include <slopnet.h>
+#include <cute.h>
 #include <bent.h>
 #include <bgame/allocator/frame.h>
 #include <bgame/asset.h>
@@ -285,6 +286,23 @@ sys_ssync_update(
 			}
 		}
 		ImGui_End();
+
+		cf_draw_push_layer(DRAW_LAYER_DEBUG);
+		for (bhash_index_t i = 0; i < bhash_len(&sys->net_to_local); ++i) {
+			ssync_net_id_t id = sys->net_to_local.keys[i];
+			const ssync_obj_info_t* obj_info = ssync_obj_info(sys->ssync, id);
+			ssync_obj_spatial_info_t spatial_info = ssync_obj_spatial_info(sys->ssync, id);
+
+			cf_draw_push_color(obj_info->is_local ? cf_color_green() : cf_color_red());
+			float radius = cf_max(5.f, spatial_info.radius);
+			cf_draw_circle2(
+				cf_v2(spatial_info.x, spatial_info.y),
+				radius,
+				0.5f
+			);
+			cf_draw_pop_color();
+		}
+		cf_draw_pop_layer();
 	}
 }
 
