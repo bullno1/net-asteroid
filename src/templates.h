@@ -8,6 +8,7 @@
 #include <cute.h>
 #include <blog.h>
 #include "assets.h"
+#include "slopsync.h"
 
 static inline bent_t
 create_asteroid(
@@ -64,6 +65,7 @@ create_asteroid(
 
 	bent_add_comp_asteroid(world, asteroid);
 	bent_add_comp_wrap_around(world, asteroid);
+	bent_add_comp_slopsync_link(world, asteroid, NULL);
 
 	return asteroid;
 }
@@ -84,6 +86,9 @@ create_player_ship(bent_world_t* world) {
 	bent_add_comp_player_ship(world, ent);
 	bent_add_comp_wrap_around(world, ent);
 	bent_add_comp_ship_controller(world, ent);
+	bent_add_comp_slopsync_link(world, ent, &(slopsync_link_t){
+		.flags = SSYNC_OBJ_OBSERVER,
+	});
 
 	return ent;
 }
@@ -114,6 +119,9 @@ create_friendly_projectile(bent_world_t* world, CF_V2 position, float rotation) 
 		.type = PROJECTILE_FRIENDLY,
 	});
 	bent_add_comp_offscreen_cull(world, ent);
+	bent_add_comp_slopsync_link(world, ent, &(slopsync_link_t){
+		.flags = SSYNC_OBJ_ONESHOT,
+	});
 
 	return ent;
 }

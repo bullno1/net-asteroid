@@ -6,15 +6,16 @@
 #include <bgame/asset.h>
 #include <blog.h>
 #include <string.h>
-#include <errno.h>
 #include <inttypes.h>
 #include <bhash.h>
 #include <barray.h>
 #include <dcimgui.h>
 #include "ecs.h"
+#include "globals.h"
 #include "systems/debug_control.h"
 
 BENT_DEFINE_POD_COMP(comp_slopsync_link, slopsync_link_t)
+BENT_DEFINE_TAG_COMP(comp_slopsync_remote)
 
 BENT_DECLARE_SYS(sys_slopsync)
 
@@ -259,9 +260,9 @@ sys_ssync_update(
 					});
 				}
 			}
-		}
 
-		ssync_update(sys->ssync, CF_DELTA_TIME);
+			ssync_update(sys->ssync, CF_DELTA_TIME);
+		}
 	}
 
 	if (debug_enabled && update_mask == UPDATE_MASK_RENDER_DEBUG) {
@@ -271,6 +272,16 @@ sys_ssync_update(
 
 				ImGui_Text("Incoming snapshots: %d", info.num_incoming_snapshots);
 				ImGui_Text("Outgoing snapshots: %d", info.num_outgoing_snapshots);
+
+				snet_lobby_state_t lobby_state = snet_lobby_state(g_snet);
+				const char* lobby_state_names[] = {
+					"IN_LOBBY",
+					"LISTING_GAMES",
+					"CREATING_GAME",
+					"JOINING_GAME",
+					"JOINED_GAME",
+				};
+				ImGui_LabelText("Snet state", "%s", lobby_state_names[lobby_state]);
 			}
 		}
 		ImGui_End();

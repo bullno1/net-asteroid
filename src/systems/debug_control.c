@@ -49,6 +49,10 @@ debug_control_update(
 				if (ImGui_Button("Restart")) {
 					bgame_reload_scene();
 				}
+
+				if (ImGui_Button("Back")) {
+					bgame_pop_scene();
+				}
 			}
 
 			if (ImGui_CollapsingHeader("Allocators", ImGuiTreeNodeFlags_DefaultOpen)) {

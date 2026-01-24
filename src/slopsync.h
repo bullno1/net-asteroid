@@ -52,9 +52,8 @@ typedef struct {
 	slopsync_fn_t sync_fn;
 } slopsync_comp_spec_t;
 
-BENT_DECLARE_COMP(comp_slopsync_link)
-BENT_DEFINE_COMP_ADDER(comp_slopsync_link, slopsync_link_t)
-BENT_DEFINE_COMP_GETTER(comp_slopsync_link, slopsync_link_t)
+BENT_POD_COMP(comp_slopsync_link, slopsync_link_t)
+BENT_TAG_COMP(comp_slopsync_remote)
 
 typedef void (*ssync_control_callback_fn_t)(
 	void* userdata,

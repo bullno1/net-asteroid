@@ -279,7 +279,11 @@ update(void) {
 			} else if (event->type == SNET_EVENT_JOIN_GAME_FINISHED) {
 				if (event->join_game.status == SNET_OK) {
 					bgame_push_scene("main_game");
+					BLOG_DEBUG("Joined game");
+					break;
 				}
+			} else {
+				BLOG_WARN("Dropped event: %d", event->type);
 			}
 		}
 	}
