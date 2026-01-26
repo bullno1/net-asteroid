@@ -103,3 +103,8 @@ endif()
 
 add_subdirectory(bgame)
 add_subdirectory(src)
+
+if (NOT EMSCRIPTEN)
+	add_custom_target(build-slopsyncd ALL)
+	add_dependencies(build-slopsyncd slopsyncd)
+endif ()
