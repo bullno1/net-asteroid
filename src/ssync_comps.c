@@ -3,9 +3,9 @@
 #include <blog.h>
 
 SSYNC_TYPED_COMP(comp_transform, transform_t) {
-	ssync_prop_float(ctx, &comp->current.translation.x, 3, SSYNC_PROP_INTERPOLATE | SSYNC_PROP_POSITION_X);
-	ssync_prop_float(ctx, &comp->current.translation.y, 3, SSYNC_PROP_INTERPOLATE | SSYNC_PROP_POSITION_Y);
-	ssync_prop_float(ctx, &comp->current.rotation, 3, SSYNC_PROP_INTERPOLATE | SSYNC_PROP_ROTATION);
+	ssync_prop_float(ctx, &comp->current.translation.x, 5, SSYNC_PROP_POSITION_X | SSYNC_PROP_INTERPOLATE);
+	ssync_prop_float(ctx, &comp->current.translation.y, 5, SSYNC_PROP_POSITION_Y | SSYNC_PROP_INTERPOLATE);
+	ssync_prop_float(ctx, &comp->current.rotation, 5, SSYNC_PROP_ROTATION);
 }
 
 SSYNC_TYPED_COMP(comp_renderable, renderable_t) {
@@ -36,9 +36,9 @@ SSYNC_TYPED_COMP(comp_collider, collider_t) {
 }
 
 SSYNC_TYPED_COMP(comp_linear_motion, linear_motion_t) {
-	ssync_prop_float(ctx, &comp->velocity.x, 3, SSYNC_PROP_DEFAULT);
-	ssync_prop_float(ctx, &comp->velocity.y, 3, SSYNC_PROP_DEFAULT);
-	ssync_prop_float(ctx, &comp->rotation, 3, SSYNC_PROP_ROTATION);
+	/*ssync_prop_float(ctx, &comp->velocity.x, 3, SSYNC_PROP_DEFAULT);*/
+	/*ssync_prop_float(ctx, &comp->velocity.y, 3, SSYNC_PROP_DEFAULT);*/
+	/*ssync_prop_float(ctx, &comp->rotation, 3, SSYNC_PROP_ROTATION);*/
 }
 
 SSYNC_TYPED_COMP(comp_projectile, projectile_t) {

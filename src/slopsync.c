@@ -29,8 +29,8 @@ typedef struct {
 
 	barray(slopsync_comp_spec_t) comp_specs;
 
-	BHASH_TABLE(const void*, bhash_hash_t) asset_to_hash;
-	BHASH_TABLE(bhash_hash_t, const void*) hash_to_asset;
+	BHASH_TABLE(const void*, uint32_t) asset_to_hash;
+	BHASH_TABLE(uint32_t, const void*) hash_to_asset;
 
 	BHASH_TABLE(ssync_net_id_t, bent_t) net_to_local;
 } sys_slopsync_t;
@@ -62,6 +62,7 @@ sys_ssync_create(void* userdata, ssync_net_id_t net_id) {
 	sys_slopsync_t* sys = userdata;
 
 	bent_t local = bent_create(sys->world);
+	bent_add_comp_slopsync_remote(sys->world, local);
 	bent_add_comp_slopsync_link(sys->world, local, &(slopsync_link_t){
 		.id = net_id,
 		.flags = ssync_obj_info(sys->ssync, net_id)->flags,
@@ -141,11 +142,6 @@ slopsync_comp_spec_cmp(const void* lhs_ptr, const void* rhs_ptr) {
 	return strcmp(lhs->name, rhs->name);
 }
 
-static bhash_hash_t
-ssync_identity(const void* key, size_t size) {
-	return *(const bhash_hash_t*)key;
-}
-
 static void
 sys_ssync_init(void* userdata, bent_world_t* world) {
 	sys_slopsync_t* sys = userdata;
@@ -173,17 +169,18 @@ sys_ssync_init(void* userdata, bent_world_t* world) {
 		BLOG_DEBUG("Registered %s", spec->name);
 	}
 
-	hconfig.hash = ssync_identity;
 	bhash_reinit(&sys->hash_to_asset, hconfig);
 	bhash_reinit(&sys->asset_to_hash, hconfig);
 	bhash_clear(&sys->hash_to_asset);
 	bhash_clear(&sys->asset_to_hash);
 	BGAME_FOREACH_DEFINED_ASSET(asset) {
-		bhash_hash_t hash = bhash_hash(asset->name, strlen(asset->name));
-		const void* asset_var = asset->var;
+		uint32_t hash = (uint32_t)bhash_hash(asset->name, strlen(asset->name));
+		const void** asset_var = asset->var;
+		const void* asset_value = *asset_var;
 
-		bhash_put(&sys->hash_to_asset, hash, asset_var);
-		bhash_put(&sys->asset_to_hash, asset_var, hash);
+		bhash_put(&sys->hash_to_asset, hash, asset_value);
+		bhash_put(&sys->asset_to_hash, asset_value, hash);
+		BLOG_DEBUG("%" PRIx32 " -> %s (%p)", hash, asset->name, (void*)asset_value);
 	}
 
 	ssync_config_t ssync_config = {
@@ -291,16 +288,39 @@ sys_ssync_update(
 		for (bhash_index_t i = 0; i < bhash_len(&sys->net_to_local); ++i) {
 			ssync_net_id_t id = sys->net_to_local.keys[i];
 			const ssync_obj_info_t* obj_info = ssync_obj_info(sys->ssync, id);
-			ssync_obj_spatial_info_t spatial_info = ssync_obj_spatial_info(sys->ssync, id);
 
-			cf_draw_push_color(obj_info->is_local ? cf_color_green() : cf_color_red());
-			float radius = cf_max(5.f, spatial_info.radius);
-			cf_draw_circle2(
-				cf_v2(spatial_info.x, spatial_info.y),
-				radius,
-				0.5f
-			);
-			cf_draw_pop_color();
+			_Alignas(ssync_obj_debug_info_t) char debug_info_buf[sizeof(ssync_obj_debug_info_t) + sizeof(ssync_obj_spatial_info_t) * 10];
+			ssync_obj_debug_info_t* debug_info = (void*)debug_info_buf;
+			debug_info->num_snapshots = 10;
+			ssync_obj_debug_info(sys->ssync, id, debug_info);
+
+			CF_Color color = obj_info->is_local ? cf_color_green() : cf_color_red();
+			if (debug_info->next_snapshot >= 0 && debug_info->prev_snapshot >= 0) {
+				cf_draw_push_color(color);
+				ssync_obj_spatial_info_t from = debug_info->snapshots[debug_info->prev_snapshot];
+				ssync_obj_spatial_info_t to   = debug_info->snapshots[debug_info->next_snapshot];
+				CF_V2 from_point = cf_v2(from.x, from.y);
+				CF_V2 to_point = cf_v2(to.x, to.y);
+				cf_draw_arrow(from_point, to_point, 0.4f, 0.7f);
+
+				CF_V2 interp_point = cf_lerp(from_point, to_point, debug_info->interpolant);
+				cf_draw_circle_fill2(interp_point, 1.5f);
+
+				cf_draw_pop_color();
+			}
+
+			for (int i = 0; i < debug_info->num_snapshots; ++i) {
+				color.a = cf_lerp(1.0, 0.2, (float)i / (float)debug_info->num_snapshots);
+				cf_draw_push_color(color);
+				ssync_obj_spatial_info_t spatial_info = debug_info->snapshots[i];
+				float radius = cf_lerp(cf_max(5.f, spatial_info.radius), 0.1, (float)i / (float)debug_info->num_snapshots);
+				cf_draw_circle2(
+					cf_v2(spatial_info.x, spatial_info.y),
+					radius,
+					0.5f
+				);
+				cf_draw_pop_color();
+			}
 		}
 		cf_draw_pop_layer();
 	}
@@ -324,7 +344,7 @@ void
 (ssync_prop_asset)(ssync_ctx_t* ctx, const void** asset_ptr) {
 	sys_slopsync_t* sys = ssync_ctx_userdata(ctx);
 
-	bhash_hash_t hash;
+	uint32_t hash;
 	if (ssync_mode(ctx) == SSYNC_MODE_WRITE) {
 		const void* asset = *asset_ptr;
 		bhash_index_t index = bhash_find(&sys->asset_to_hash, asset);
@@ -335,7 +355,7 @@ void
 		}
 	}
 
-	ssync_prop_u64(ctx, &hash, SSYNC_PROP_DEFAULT);
+	ssync_prop_u32(ctx, &hash, SSYNC_PROP_DEFAULT);
 
 	if (ssync_mode(ctx) == SSYNC_MODE_READ) {
 		bhash_index_t index = bhash_find(&sys->hash_to_asset, hash);

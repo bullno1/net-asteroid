@@ -1,4 +1,5 @@
 #include "../ecs.h"
+#include "../slopsync.h"
 
 static void
 sys_snap_transform_update(

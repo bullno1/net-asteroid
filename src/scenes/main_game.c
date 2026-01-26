@@ -27,11 +27,11 @@ static void
 load_scene(bool create_asteroids) {
 	scene_loaded = true;
 
-	if (create_asteroids) {
-		for (int i = 0; i < 7; ++i) {
-			create_asteroid(world, &rnd);
-		}
-	}
+	/*if (create_asteroids) {*/
+		/*for (int i = 0; i < 7; ++i) {*/
+			/*create_asteroid(world, &rnd);*/
+		/*}*/
+	/*}*/
 
 	player_ship = create_player_ship(world);
 }
