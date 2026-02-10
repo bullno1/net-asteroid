@@ -331,8 +331,8 @@ collision_update(
 					);
 					CF_Manifold manifold;
 					cf_collide(
-						&shape_a.data, NULL, shape_a.type,
-						&shape_b.data, NULL, shape_b.type,
+						&shape_a.data, shape_a.type,
+						&shape_b.data, shape_b.type,
 						&manifold
 					);
 					if (manifold.count > 0) {

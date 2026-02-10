@@ -43,8 +43,9 @@ update(void) {
 	cf_draw_push_shader(shader);
 	cf_draw_set_texture("tex_background", texture);
 	cf_draw_set_uniform_v2("u_background_size", cf_v2(width, height));
-	cf_draw_push_antialias(false);
+	cf_draw_push_shape_aa(false);
 	cf_draw_box(screen, 0.f, 0.f);
+	cf_draw_pop_shape_aa();
 	cf_draw_pop_shader();
 
 	cf_app_draw_onto_screen(true);

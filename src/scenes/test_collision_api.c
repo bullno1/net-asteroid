@@ -168,8 +168,8 @@ update(void) {
 
 	CF_Manifold manifold = { 0 };
 	cf_collide(
-		&shape_a_transformed.data, NULL, shape_a_transformed.type,
-		&shape_b_transformed.data, NULL, shape_b_transformed.type,
+		&shape_a_transformed.data, shape_a_transformed.type,
+		&shape_b_transformed.data, shape_b_transformed.type,
 		&manifold
 	);
 	if (manifold.count > 0) {

@@ -27,7 +27,7 @@ set_target_properties(
 
 # Then everything else to avoid leaking into deps
 
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_EXTENSIONS OFF)
 
 function (setup_library LIBRARY_NAME TYPE SOURCES)

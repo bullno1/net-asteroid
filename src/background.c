@@ -52,8 +52,8 @@ draw_background(
 	cf_draw_set_uniform_v2("u_background_size", cf_extents(box));
 	cf_draw_set_uniform_v2("u_offset", offset);
 	cf_draw_set_uniform_float("u_scale", scale);
-	cf_draw_push_antialias(false);
+	cf_draw_push_shape_aa(1.0f);
 	cf_draw_box(box, 0.f, 0.f);
-	cf_draw_pop_antialias();
+	cf_draw_pop_shape_aa();
 	cf_draw_pop_shader();
 }
