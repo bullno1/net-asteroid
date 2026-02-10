@@ -7,6 +7,7 @@
 #include <barena.h>
 #include <bgame/asset.h>
 #include <slopnet.h>
+#include <stdlib.h>
 #include <slopsync/schema.h>
 #include "slopsync.h"
 #include "ssync_schema.h"
@@ -61,7 +62,10 @@ init(int argc, const char** argv) {
 		cf_app_init_imgui();
 		init_fs();
 
-		const char* user_dir = cf_fs_get_user_directory("bullno1", "asteroid-net");
+		const char* user_dir = cf_fs_get_user_directory(
+			"bullno1",
+			getenv("GAME_NAME") != NULL ? getenv("GAME_NAME") : "asteroid-net"
+		);
 		cf_fs_set_write_directory(user_dir);
 		cf_fs_mount(user_dir, "/user", true);
 
